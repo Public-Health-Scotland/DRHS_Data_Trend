@@ -32,6 +32,7 @@ library(dplyr)
 library(plotly)
 library(shinyWidgets)
 library(forcats)
+library(DT)
 
 ##############################################.
 ############## Data Input ----
@@ -224,8 +225,18 @@ p("Insert text here explaing what this shows. My preference would be to include 
       width = 12,
       plotlyOutput("activity_summary_plot",
                    width = "1090px",
-                   height = "600px")
+                   height = "600px"),
+      HTML("<button data-toggle = 'collapse' href = '#activitysummary'
+                   class = 'btn btn-primary' id = 'activitysummary_link'> 
+                   <strong> Show/hide table </strong></button>"),
+      HTML("<div id = 'activitysummary' class = 'collapse'>"),
+      br(),
+      dataTableOutput("activity_summary_table"),
+      HTML("</div>"),
+      br(),
+      br()
 ),
+
 
 tags$head(
   tags$style(HTML("hr {border-top: 1px solid #000000;}"))
@@ -254,7 +265,16 @@ h3("Substances"),
       width = 12,
       plotlyOutput("drugs_plot",
                    width = "1090px",
-                   height = "600px")
+                   height = "600px"),
+      HTML("<button data-toggle = 'collapse' href = '#drugs'
+                   class = 'btn btn-primary' id = 'drugs_link'> 
+                   <strong> Show/hide table </strong></button>"),
+      HTML("<div id = 'drugs' class = 'collapse'>"),
+      br(),
+      dataTableOutput("drugs_table"),
+      HTML("</div>"),
+      br(),
+      br()
     ),
     
     p(
@@ -284,7 +304,16 @@ h3("Substances"),
         width = 12,
         plotlyOutput("demographic_plot",
                      width = "1090px",
-                     height = "600px")
+                     height = "600px"),
+        HTML("<button data-toggle = 'collapse' href = '#demographic'
+                   class = 'btn btn-primary' id = 'demographic_link'> 
+                   <strong> Show/hide table </strong></button>"),
+        HTML("<div id = 'demographic' class = 'collapse'>"),
+        br(),
+        dataTableOutput("demographic_table"),
+        HTML("</div>"),
+        br(),
+        br()
       )
       )
     
@@ -338,7 +367,8 @@ h3("Substances"),
         filter(
           Hospital.Clinical.Type %in% input$Hospital_Clinic_Type
           & Geography %in% input$Location
-        )
+        )%>%
+        select(Years,Hospital.Clinical.Type,Activity,Geography,Values)
     })
     
     #for the substances summary
@@ -347,7 +377,8 @@ h3("Substances"),
         filter(
           Hospital.Clinical.Type %in% input$Hospital_Clinic_Type
           & Geography %in% input$Location
-        )
+        )%>%
+        select(Years,Hospital.Clinical.Type,Substance,Geography,Values)
     })
     
     #for the demographic summary
@@ -361,7 +392,8 @@ h3("Substances"),
             Hospital.Clinical.Type %in% input$Hospital_Clinic_Type
             & Geography %in% input$Location
             & Sex == "All"
-          )
+          )%>%
+          select(Years,Hospital.Clinical.Type,Geography,Age,Values)
       }
       else if(input$summary_demographic == "Sex")
       {demographic_summary %>%
@@ -369,7 +401,8 @@ h3("Substances"),
             Hospital.Clinical.Type %in% input$Hospital_Clinic_Type
             & Geography %in% input$Location
             & Age == "All"
-          ) 
+          ) %>%
+          select(Years,Hospital.Clinical.Type,Geography,Sex,Values)
           
       }
       else if (input$summary_demographic == "SIMD")
@@ -377,7 +410,8 @@ h3("Substances"),
         SIMD_summary %>%
           filter(Hospital.Clinical.Type %in% input$Hospital_Clinic_Type
                  & Geography %in% input$Location
-                 )
+                 )%>%
+          select(Years,Hospital.Clinical.Type,Geography,SIMD,Values)
       }
     })
     
@@ -493,6 +527,19 @@ h3("Substances"),
       
     })
     
+    #Insert table
+    output$activity_summary_table <- renderDataTable({
+      datatable(activity_summary_new(),
+                colnames = c("Financial Year",
+                             "Hospital - Clinical Type",
+                             "Activity Measure",
+                             "Location",
+                             "EASR Rates"),
+                rownames = FALSE,
+                style = "Bootstrap"
+                  )
+    })
+    
     # Substances Plot
     #Again start with the tooltip summary
     output$drugs_plot <- renderPlotly({
@@ -600,6 +647,19 @@ h3("Substances"),
                displaylogo = F, collaborate = F, editable = F)
       
     })
+    
+    output$drugs_table <- renderDataTable({
+      datatable(drug_summary_new(),
+                colnames = c("Financial Year",
+                             "Hospital - Clinical Type",
+                             "Substance",
+                             "Location",
+                             "EASR Rates"),
+                rownames = FALSE,
+                style = "Bootstrap"
+      )
+    })
+    
     
     #Demographic Plot
     
@@ -711,6 +771,20 @@ h3("Substances"),
                                              'hoverClosestCartesian'),
                displaylogo = F, collaborate = F, editable = F)
       
+    })
+    
+    
+    #Insert table
+    output$demographic_table <- renderDataTable({
+      datatable(demographic_summary_new(),
+                rownames = FALSE,
+                colnames = c("Financial Year",
+                             "Hospital - Clinical Type",
+                             "Location",
+                             input$summary_demographic,
+                             "EASR Rates"),
+                style = "Bootstrap"
+      )
     })
     
     #End of server
