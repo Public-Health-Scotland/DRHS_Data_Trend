@@ -16,16 +16,14 @@
 # - 2) Rates of Stays broken down by substance categories
 # - 3) Rates of Patients broken down by Demographic measure (Age/Sex/SIMD). 
 
-#So first input will be a slightly simplified table and will only inlcude 
-#enough data to test that user inputs are working correctly. 
-# - There will be intitially three options to choose from 
+
+#There will be intitially three options to choose from 
 # - 1) Hospital/Clinical Type
 # - 2) Geography Type
 # = 3) Geography
 
 #A fourth option will be used to 'toggle' between Age, Sex and SIMD for the 
-#demographic charts. It is presented here as a drop down menu at present
-#to simply determine that the reactive elements are working correctly. 
+#demographic charts. 
 
 library(shiny)
 library(dplyr)
@@ -34,55 +32,26 @@ library(shinyWidgets)
 library(forcats)
 library(DT)
 
+
 ##############################################.
 ############## Data Input ----
 ##############################################.
 
 
-#The data that is being read in here is a simplified version of the real 
-#data that would be used. In practice the data that is generated for the data trend 
-#page would be utilised for this page. 
+#The current data is stored on the stats server in the SubstanceMisuse1 directory 
+#Current approach to reading in data is to take the SPSS output and then cut it down to 
+#size and then save as csv files for use. 
 
-#The first input would be the data explorer "time trend" files that could 
-#be used to generate the following tables
-# 1) The file filtered to only include 'all drugs' in the substances category
-activity_summary <- read.csv("Time_trend_skeleton.csv")
-activity_summary<- activity_summary%>%
-  filter(Substance=="All", 
-         Measure== "Rates")
+path<-"\\\\nssstats01\\SubstanceMisuse1\\Topics\\DrugRelatedHospitalStats\\Publications\\DRHS\\20181218\\Temp\\Dashboard_Data_Temp\\"
 
-# 2) The file filtered to only inlcude 'stays' in the activity measure column
-drug_summary <- read.csv("Time_trend_skeleton.csv")
-#choose only the 6 main categories (not sub categories)
-Substances<- c("Opiods", "Cannabinoids", "Sedatives/Hypnotics",
-               "Cocaine","Other Stimulants","Multiple/Other")
-
-drug_summary<-drug_summary%>%
-  filter(Activity=="Stays", 
-         Measure== "Rates",
-         Substance %in% Substances)
-
-#The following demographic tables would be read in from two files 
-#one for the age/sex file and one for the SIMD file 
-#Note- SIMD changed to factor. 
-
-demographic_summary<-read.csv("Age_Sex_Data_Trend_Skeleton.csv")
-demographic_summary<- demographic_summary%>%
-  mutate(Age = fct_relevel(Age, "Under 15"))%>%
-  mutate(Age = fct_relevel(Age, "Over 64", after = 6))
-
-str(demographic_summary$Age)
-SIMD_summary<-read.csv("SIMD_Data_Trend_Skeleton.csv")
-SIMD_summary$SIMD<-as.factor(SIMD_summary$SIMD)
-
+activity_summary <- read.csv(paste0(path,"activity_summary.csv"))
+drug_summary <- read.csv(paste0(path, "drug_summary.csv"))
+demographic_summary<- read.csv(paste0(path,"demographic_summary.csv"))
 
 #we will also set user input options
-clinical_types <- as.character(unique(activity_summary$Hospital.Clinical.Type))
-location_types <- c("Scotland", "Health Board", "ADP")
-location <- factor(activity_summary$Geography)%>%
-  fct_relevel("Scotland")
-str(location)
-#location <- as.character(unique(activity_summary$Geography))
+clinical_types <- as.character(unique(activity_summary$hos_clin_type))
+location_types <- as.character(unique(activity_summary$geography_type))
+
 demographic_types<-c("Age","Sex", "SIMD")
 
 
@@ -92,36 +61,6 @@ demographic_types<-c("Age","Sex", "SIMD")
   ############## User Interface ----
   ##############################################.
   ui <- fluidPage(
-    style = "width: 100%; height: 100%; max-width: 1200px;",
-    tags$head(
-      tags$style(
-        type = "text/css",
-        ".shiny-output-error { visibility: hidden; }",
-        ".shiny-output-error:before { visibility: hidden; }"
-      ),
-      
-      #The following chunk of code does three things:
-      # 1. Paints the ribbon that contains the tab headers white.
-      # 2. Highlights the header of the active tab in blue.
-      # 3. Sets the font size for the sentence that appears above the...
-      # cross-boundary flow diagram.
-      
-      tags$style(
-        HTML(
-          ".tabbable > .nav > li > a {
-          color: #000000;
-}
-
-.tabbable > .nav > li[class = active] > a {
-background-color: #0072B2;
-color: #FFFFFF;
-}
-
-#flow_text {
-font-size: 15px;
-}")
-)
-        ),
 
     style = "height: 95%; width: 95%; background-color: #FFFFFF;
     border: 0px solid #FFFFFF;",
@@ -190,14 +129,14 @@ font-size: 15px;
       #Insert the reactive filters. As location  is dependent on 
       #location type this part has to be set up in the server as a 
       #reactive object and then placed into the UI. 
-      
+     
       column(
         4,
         shinyWidgets::pickerInput(
           inputId = "Hospital_Clinic_Type",
           label = "Select clinical type",
           choices = clinical_types,
-          selected = "Combined- Combined "
+          selected = "Combined (General acute/Psychiatric) - Combined (Mental and Behavioural/Overdose)"
         )
       ),
      
@@ -244,18 +183,11 @@ tags$head(
 
     p(
       br(),
-      (
-        "We can then put some more text underneath the plot. We sill need to format 
-        it neatly (with headers and the likes)"
-      ),
+
       br(),
       
-      hr(),
-      (
-        "It would also be useful to maybe have lines between the graphs to make the 
-        separation between them clear, but so far I can only figure out how to generate
-        it when there is some text above!"
-      )
+      hr()
+      
       
     ), 
 h3("Substances"),
@@ -298,6 +230,7 @@ h3("Substances"),
         label = "Select demographic",
         choices = demographic_types,
         selected = "Age"
+      )
       ),
       #then final demographic plot
       mainPanel(
@@ -315,7 +248,7 @@ h3("Substances"),
         br(),
         br()
       )
-      )
+      
     
 #End of UI part
   
@@ -342,13 +275,14 @@ h3("Substances"),
     
     output$locations <- renderUI({
       shinyWidgets::pickerInput(inputId = "Location",
-                                label = "Select location",  
-                                choices = sort(
+                                label = "Select location", 
+                                options = list(size=5),
+                                choices = 
                                   unique(
                                     as.character(
-                                      activity_summary$Geography
-                                      [activity_summary$Geography.Type %in% input$Location_type]
-                                    )
+                                      activity_summary$geography
+                                      [activity_summary$geography_type %in% input$Location_type]
+                                    
                                   )
                                 )
       )
@@ -365,20 +299,20 @@ h3("Substances"),
     activity_summary_new <- reactive({
       activity_summary %>%
         filter(
-          Hospital.Clinical.Type %in% input$Hospital_Clinic_Type
-          & Geography %in% input$Location
+          hos_clin_type %in% input$Hospital_Clinic_Type
+          & geography %in% input$Location
         )%>%
-        select(Years,Hospital.Clinical.Type,Activity,Geography,Values)
+        select(year,hos_clin_type, activity_type,geography,value)
     })
     
     #for the substances summary
     drug_summary_new <- reactive({
       drug_summary %>%
         filter(
-          Hospital.Clinical.Type %in% input$Hospital_Clinic_Type
-          & Geography %in% input$Location
+          hos_clin_type %in% input$Hospital_Clinic_Type
+          & geography %in% input$Location
         )%>%
-        select(Years,Hospital.Clinical.Type,Substance,Geography,Values)
+        select(year,hos_clin_type,drug_type,geography,value)
     })
     
     #for the demographic summary
@@ -389,29 +323,30 @@ h3("Substances"),
       {
         demographic_summary %>%
           filter(
-            Hospital.Clinical.Type %in% input$Hospital_Clinic_Type
-            & Geography %in% input$Location
-            & Sex == "All"
+            hos_clin_type %in% input$Hospital_Clinic_Type
+            & geography %in% input$Location
+            & age_group != "All"
           )%>%
-          select(Years,Hospital.Clinical.Type,Geography,Age,Values)
+          select(year,hos_clin_type,geography,age_group,value)
       }
       else if(input$summary_demographic == "Sex")
       {demographic_summary %>%
           filter(
-            Hospital.Clinical.Type %in% input$Hospital_Clinic_Type
-            & Geography %in% input$Location
-            & Age == "All"
+            hos_clin_type %in% input$Hospital_Clinic_Type
+            & geography %in% input$Location
+            & sex != "All"
           ) %>%
-          select(Years,Hospital.Clinical.Type,Geography,Sex,Values)
+          select(year,hos_clin_type,geography,sex,value)
           
       }
       else if (input$summary_demographic == "SIMD")
       {
-        SIMD_summary %>%
-          filter(Hospital.Clinical.Type %in% input$Hospital_Clinic_Type
-                 & Geography %in% input$Location
+        demographic_summary %>%
+          filter(hos_clin_type %in% input$Hospital_Clinic_Type
+                 & geography %in% input$Location
+                 & simd != "All"
                  )%>%
-          select(Years,Hospital.Clinical.Type,Geography,SIMD,Values)
+          select(year,hos_clin_type,geography,simd,value)
       }
     })
     
@@ -425,16 +360,16 @@ h3("Substances"),
       #first the tooltip label
       tooltip_summary <- paste0(
         "Financial year: ",
-        activity_summary_new()$Years,
+        activity_summary_new()$year,
         "<br>",
         "Location: ",
-        activity_summary_new()$Geography,
+        activity_summary_new()$geography,
         "<br>",
         "Clinical Type: ",
-        activity_summary_new()$Hospital.Clinical.Type,
+        activity_summary_new()$hos_clin_type,
         "<br>",
         "EASR rates: ",
-        activity_summary_new()$Values
+        activity_summary_new()$value
       )
       
       #Create the main body of the chart.
@@ -442,9 +377,9 @@ h3("Substances"),
       plot_ly(
         data = activity_summary_new(),
         #plot- we wont bother at this point with tailored colour
-        x = ~  Years,
-        y = ~  Values,
-        color = ~  Activity,
+        x = ~  year,
+        y = ~  value,
+        color = ~  activity_type,
         #tooltip
         text = tooltip_summary,
         hoverinfo = "text",
@@ -470,8 +405,8 @@ h3("Substances"),
                  
                  separatethousands = TRUE,
                  
-                 range = c(0, max(activity_summary_new()$Values, na.rm = TRUE) +
-                             (max(activity_summary_new()$Values, na.rm = TRUE)
+                 range = c(0, max(activity_summary_new()$value, na.rm = TRUE) +
+                             (max(activity_summary_new()$value, na.rm = TRUE)
                               * 10 / 100)),
                  
                  title = paste0(c(
@@ -546,16 +481,16 @@ h3("Substances"),
       #first the tooltip label
       tooltip_summary <- paste0(
         "Financial year: ",
-        drug_summary_new()$Years,
+        drug_summary_new()$year,
         "<br>",
         "Location: ",
-        drug_summary_new()$Geography,
+        drug_summary_new()$geography,
         "<br>",
         "Clinical Type: ",
-        drug_summary_new()$Hospital.Clinical.Type,
+        drug_summary_new()$hos_clin_type,
         "<br>",
         "EASR rates: ",
-        drug_summary_new()$Values
+        drug_summary_new()$value
       )
       
       #Create the main body of the chart.
@@ -563,9 +498,9 @@ h3("Substances"),
       plot_ly(
         data = drug_summary_new(),
         #plot- we wont bother at this point with tailored colour
-        x = ~  Years,
-        y = ~  Values,
-        color = ~  Substance,
+        x = ~  year,
+        y = ~  value,
+        color = ~  drug_type,
         #tooltip
         text = tooltip_summary,
         hoverinfo = "text",
@@ -591,8 +526,8 @@ h3("Substances"),
                  
                  separatethousands = TRUE,
                  
-                 range = c(0, max(drug_summary_new()$Values, na.rm = TRUE) +
-                             (max(drug_summary_new()$Values, na.rm = TRUE)
+                 range = c(0, max(drug_summary_new()$value, na.rm = TRUE) +
+                             (max(drug_summary_new()$value, na.rm = TRUE)
                               * 10 / 100)),
                  
                  title = paste0(c(
@@ -667,16 +602,16 @@ h3("Substances"),
       #first the tooltip label
       tooltip_summary <- paste0(
       "Financial year: ",
-        demographic_summary_new()$Years,
+        demographic_summary_new()$year,
         "<br>",
         "Location: ",
-        demographic_summary_new()$Geography,
+        demographic_summary_new()$geography,
         "<br>",
         "Clinical Type: ",
-        demographic_summary_new()$Hospital.Clinical.Type,
+        demographic_summary_new()$hos_clin_type,
         "<br>",
         "EASR rates: ",
-        demographic_summary_new()$Values
+        demographic_summary_new()$value
       )
       
       #Create the main body of the chart.
@@ -684,9 +619,9 @@ h3("Substances"),
       plot_ly(
         data = demographic_summary_new(),
         #plot- we wont bother at this point with tailored colour
-        x = ~  Years,
-        y = ~  Values,
-        color = ~  get(input$summary_demographic),
+        x = ~  year,
+        y = ~  value,
+        color = ~  demographic_summary_new()[,4],
         #tooltip
         text = tooltip_summary,
         hoverinfo = "text",
@@ -715,8 +650,8 @@ h3("Substances"),
                  
                  separatethousands = TRUE,
                  
-                 range = c(0, max(demographic_summary_new()$Values, na.rm = TRUE) +
-                             (max(demographic_summary_new()$Values, na.rm = TRUE)
+                 range = c(0, max(demographic_summary_new()$value, na.rm = TRUE) +
+                             (max(demographic_summary_new()$value, na.rm = TRUE)
                               * 10 / 100)),
                  
                  title = paste0(c(
