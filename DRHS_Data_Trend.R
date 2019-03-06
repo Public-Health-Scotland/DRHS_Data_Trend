@@ -67,16 +67,20 @@ demographic_types<-c("Age","Sex", "SIMD")
     h1(tags$b("Data Trends In Scotland")),
     p(
       HTML(
-        "This is a one page tab that covers data at a high level overview
-         of Scotland. The text wording can be agreed at a later date. "), 
+        "The charts below provide a high level overview of drug related hospital stays in Scotland. This can be viewed at the level of Scotland, NHS Board, or Alcohol and Drug Partnership (ADP). It covers both General/Acute and Psychiatric hospital admissions. Clinical reasons for admission are as a result of either overdose or mental and behavioural reasons.
+          The areas covered are  - 
+        "), 
         br(),
-        br(),
-        "It could include stuff like - ",
       tags$ul(
-      tags$li("Information about what this page shows"),
-      tags$li("Information about what this page ", tags$i("doesn't"), " show"),
-      tags$li("A link to the data explorer")
-      )),
+      tags$li("Activity Type"),
+      tags$li("Substances"),
+      tags$li("Demographics (Age/Sex/Deprivation)")
+      ),
+      HTML(
+        "For a more detailed breakdown please consult the [insert link to 
+        data explorer when available]"
+      )
+      ),
     
     tags$ul(
       tags$li(
@@ -155,10 +159,8 @@ demographic_types<-c("Age","Sex", "SIMD")
 
     h3("Activity Measure"), 
 br(),
-p("Insert text here explaing what this shows. My preference would be to include only
-  text that is either above or below the graph (not a bit above and a bit 
-  underneath as in data trend page). I think that this makes everything a little 
-  bit clearer"),
+p("Activity type shows the European Age Standardised Rate (EASR) of the stays,
+  patients, and new patients over time."),
 
     mainPanel(
       width = 12,
@@ -182,16 +184,21 @@ tags$head(
 ),
 
     p(
-      br(),
 
       br(),
-      
+      tags$ul(
+        tags$li("Insert summary point here [1]"),
+        tags$li("Insert summary point here [2]"),
+        tags$li("Insert summary point here [3]")
+      ),
       hr()
-      
-      
-    ), 
-h3("Substances"),
 
+    ), 
+h3("Drug type"),
+br(),
+p("Drug type shows the European Age/Sex Standardised Rate (EASR) of stays, broken 
+  down by drug type, over time."),
+br(),
     #then insert the drugs plot
     mainPanel(
       width = 12,
@@ -208,14 +215,25 @@ h3("Substances"),
       br(),
       br()
     ),
+p(
+  
+  br(),
+  tags$ul(
+    tags$li("Insert summary point here [1]"),
+    tags$li("Insert summary point here [2]"),
+    tags$li("Insert summary point here [3]")
+  ),
+  hr()
+  
+),
     
     p(
       h3("Demographics"), 
       br(),
       (
-        "We can then put some more text underneath this plot. We now add a drop down menu
-        for the demographic stuff. This would look better as a button type thing rather 
-        than a drop down menu, but this will suffice for now"  
+        "Patient EASR over time are shown for the demographic options of Age,
+        Sex and Deprivation. Toggling between the options will show you the 
+        respective graph"  
     ),
     br()
     ), 
@@ -224,11 +242,14 @@ h3("Substances"),
     #Insert demographic options 
     #This part to be converted into toggle button
     column(
-      width = 6,
+      width = 4,
       shinyWidgets::radioGroupButtons(
         inputId = "summary_demographic",
-        label = "Select demographic",
+        label = "Show: ",
         choices = demographic_types,
+        status = "primary",justified = TRUE,
+        checkIcon = list(yes = icon("ok", lib = "glyphicon"), 
+                         no = icon("remove", lib = "glyphicon")),
         selected = "Age"
       )
       ),
@@ -246,7 +267,16 @@ h3("Substances"),
         dataTableOutput("demographic_table"),
         HTML("</div>"),
         br(),
-        br()
+        br(), 
+        p(
+          
+          br(),
+          tags$ul(
+            tags$li("Insert summary point here [1]"),
+            tags$li("Insert summary point here [2]"),
+            tags$li("Insert summary point here [3]")
+          )
+        )
       )
       
     
@@ -359,16 +389,19 @@ h3("Substances"),
     output$activity_summary_plot <- renderPlotly({
       #first the tooltip label
       tooltip_summary <- paste0(
-        "Financial year: ",
-        activity_summary_new()$year,
+        "Hospital clinical type: ",
+        activity_summary_new()$hos_clin_type,
         "<br>",
         "Location: ",
         activity_summary_new()$geography,
         "<br>",
-        "Clinical Type: ",
-        activity_summary_new()$hos_clin_type,
+        "Activity type: ", 
+        activity_summary_new()$activity_type,
         "<br>",
-        "EASR rates: ",
+        "Financial year: ",
+        activity_summary_new()$year,
+        "<br>",
+        "Rate: ",
         activity_summary_new()$value
       )
       
@@ -394,7 +427,7 @@ h3("Substances"),
         #add in title to chart
         
         layout(title =
-                 paste0("Activity rates for ",input$Hospital_Clinic_Type,
+                 paste0("Activity type stay rates for ",input$Hospital_Clinic_Type,
                         " in ", input$Location),
                
                separators = ".",
@@ -411,7 +444,7 @@ h3("Substances"),
                  
                  title = paste0(c(
                    rep("&nbsp;", 20),
-                   "EASR Rates",
+                   "Rate",
                    rep("&nbsp;", 20),
                    rep("\n&nbsp;", 3)
                  ),
@@ -465,11 +498,11 @@ h3("Substances"),
     #Insert table
     output$activity_summary_table <- renderDataTable({
       datatable(activity_summary_new(),
-                colnames = c("Financial Year",
-                             "Hospital - Clinical Type",
-                             "Activity Measure",
+                colnames = c("Financial year",
+                             "Hospital clinical type",
+                             "Activity type",
                              "Location",
-                             "EASR Rates"),
+                             "Rate"),
                 rownames = FALSE,
                 style = "Bootstrap"
                   )
@@ -480,16 +513,19 @@ h3("Substances"),
     output$drugs_plot <- renderPlotly({
       #first the tooltip label
       tooltip_summary <- paste0(
-        "Financial year: ",
-        drug_summary_new()$year,
+        "Hospital clinical type: ",
+        drug_summary_new()$hos_clin_type,
         "<br>",
         "Location: ",
         drug_summary_new()$geography,
         "<br>",
-        "Clinical Type: ",
-        drug_summary_new()$hos_clin_type,
+        "Drug type: ",
+        drug_summary_new()$drug_type,
         "<br>",
-        "EASR rates: ",
+        "Financial year: ",
+        drug_summary_new()$year,
+        "<br>",
+        "Rate: ",
         drug_summary_new()$value
       )
       
@@ -516,7 +552,7 @@ h3("Substances"),
         
         layout(title =
                  paste0("Stay rates for ",input$Hospital_Clinic_Type,
-                        " in ", input$Location, " by drug category"),
+                        " in ", input$Location, " by drug type"),
                
                separators = ".",
                
@@ -532,7 +568,7 @@ h3("Substances"),
                  
                  title = paste0(c(
                    rep("&nbsp;", 20),
-                   "EASR Rates",
+                   "Rate",
                    rep("&nbsp;", 20),
                    rep("\n&nbsp;", 3)
                  ),
@@ -585,11 +621,11 @@ h3("Substances"),
     
     output$drugs_table <- renderDataTable({
       datatable(drug_summary_new(),
-                colnames = c("Financial Year",
-                             "Hospital - Clinical Type",
-                             "Substance",
+                colnames = c("Financial year",
+                             "Hospital clinical type",
+                             "Drug type",
                              "Location",
-                             "EASR Rates"),
+                             "Rate"),
                 rownames = FALSE,
                 style = "Bootstrap"
       )
@@ -601,15 +637,20 @@ h3("Substances"),
     output$demographic_plot <- renderPlotly({
       #first the tooltip label
       tooltip_summary <- paste0(
-      "Financial year: ",
-        demographic_summary_new()$year,
+        "Hospital clinical type: ",
+        demographic_summary_new()$hos_clin_type,
         "<br>",
         "Location: ",
         demographic_summary_new()$geography,
         "<br>",
-        "Clinical Type: ",
-        demographic_summary_new()$hos_clin_type,
+        input$summary_demographic, ": ",
+        demographic_summary_new()[,4],
         "<br>",
+      "Financial year: ",
+        demographic_summary_new()$year,
+        "<br>",
+        
+        
         "EASR rates: ",
         demographic_summary_new()$value
       )
@@ -713,11 +754,11 @@ h3("Substances"),
     output$demographic_table <- renderDataTable({
       datatable(demographic_summary_new(),
                 rownames = FALSE,
-                colnames = c("Financial Year",
-                             "Hospital - Clinical Type",
+                colnames = c("Financial year",
+                             "Hospital clinical type",
                              "Location",
                              input$summary_demographic,
-                             "EASR Rates"),
+                             "Rate"),
                 style = "Bootstrap"
       )
     })
