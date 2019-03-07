@@ -14,7 +14,7 @@
 #There will be three charts in total in the data trend page
 # - 1) Rates of Activity Measure (Stays/Patients/New Patients)
 # - 2) Rates of Stays broken down by substance categories
-# - 3) Rates of Patients broken down by Demographic measure (Age/Sex/SIMD). 
+# - 3) Rates of Patients broken down by Demographic measure (Age/Sex/Deprivation). 
 
 
 #There will be intitially three options to choose from 
@@ -42,17 +42,46 @@ library(DT)
 #Current approach to reading in data is to take the SPSS output and then cut it down to 
 #size and then save as csv files for use. 
 
-path<-"\\\\nssstats01\\SubstanceMisuse1\\Topics\\DrugRelatedHospitalStats\\Publications\\DRHS\\20181218\\Temp\\Dashboard_Data_Temp\\"
+path<- "\\\\nssstats01\\SubstanceMisuse1\\Topics\\DrugRelatedHospitalStats\\Publications\\DRHS\\20181218\\Temp\\"
 
-activity_summary <- read.csv(paste0(path,"activity_summary.csv"))
-drug_summary <- read.csv(paste0(path, "drug_summary.csv"))
-demographic_summary<- read.csv(paste0(path,"demographic_summary.csv"))
+#Data to be used for explorer and trend pages
+all_data<- readRDS(paste0(path,"s06-temp09_num_rate_perc_R-SHINY.rds"))
+
+all_data <- all_data %>% mutate(value = round(value, 2))
+
+drug_types<- as.character(unique(all_data$drug_type)[2:7])
+
+activity_summary<-all_data %>% 
+  filter(drug_type == "All", 
+         age_group == "All",
+         sex == "All",
+         simd == "All", 
+         measure == "Rate")
+
+drug_summary<- all_data %>% 
+  filter(activity_type == "Stays",
+         drug_type %in% drug_types,
+         age_group == "All",
+         sex == "All",
+         simd == "All", 
+         measure == "Rate") %>% 
+  droplevels()
+
+demographic_summary<- all_data  %>% 
+  filter(drug_type == "All",
+         activity_type =="Patients",
+         ((age_group != "All" & sex == "All" & simd =="All")|
+            (age_group == "All" & sex != "All" & simd =="All")|
+            (age_group == "All" & sex == "All" & simd !="All")), 
+         measure == "Rate") 
+
+
 
 #we will also set user input options
 clinical_types <- as.character(unique(activity_summary$hos_clin_type))
 location_types <- as.character(unique(activity_summary$geography_type))
 
-demographic_types<-c("Age","Sex", "SIMD")
+demographic_types<-c("Age","Sex", "Deprivation")
 
 
 #Beginning of script
@@ -138,9 +167,9 @@ demographic_types<-c("Age","Sex", "SIMD")
         4,
         shinyWidgets::pickerInput(
           inputId = "Hospital_Clinic_Type",
-          label = "Select clinical type",
+          label = "Select hospital - clinical type",
           choices = clinical_types,
-          selected = "Combined (General acute/Psychiatric) - Combined (Mental and Behavioural/Overdose)"
+          selected = clinical_types[9]
         )
       ),
      
@@ -156,10 +185,11 @@ demographic_types<-c("Age","Sex", "SIMD")
 
 
     #In the main panel of the summary tab, insert the first plot
-
+br(),
+br(),
     h3("Activity Measure"), 
 br(),
-p("Activity type shows the European Age Standardised Rate (EASR) of the stays,
+p("Activity type shows the European Age-sex Standardised Rate (EASR) of the stays,
   patients, and new patients over time."),
 
     mainPanel(
@@ -180,7 +210,7 @@ p("Activity type shows the European Age Standardised Rate (EASR) of the stays,
 
 
 tags$head(
-  tags$style(HTML("hr {border-top: 1px solid #000000;}"))
+  tags$style(HTML("hr {border: 1px solid #000000;}"))
 ),
 
     p(
@@ -196,7 +226,7 @@ tags$head(
     ), 
 h3("Drug type"),
 br(),
-p("Drug type shows the European Age/Sex Standardised Rate (EASR) of stays, broken 
+p("Drug type shows the European Age-sex Standardised Rate (EASR) of stays, broken 
   down by drug type, over time."),
 br(),
     #then insert the drugs plot
@@ -369,7 +399,7 @@ p(
           select(year,hos_clin_type,geography,sex,value)
           
       }
-      else if (input$summary_demographic == "SIMD")
+      else if (input$summary_demographic == "Deprivation")
       {
         demographic_summary %>%
           filter(hos_clin_type %in% input$Hospital_Clinic_Type
@@ -389,7 +419,7 @@ p(
     output$activity_summary_plot <- renderPlotly({
       #first the tooltip label
       tooltip_summary <- paste0(
-        "Hospital clinical type: ",
+        "Hospital - clinical type: ",
         activity_summary_new()$hos_clin_type,
         "<br>",
         "Location: ",
@@ -427,8 +457,8 @@ p(
         #add in title to chart
         
         layout(title =
-                 paste0("Activity type stay rates for ",input$Hospital_Clinic_Type,
-                        " in ", input$Location),
+                 paste0("Hospital rates for ",input$Hospital_Clinic_Type,
+                        " in ", input$Location, " by activity type"),
                
                separators = ".",
                
@@ -499,7 +529,7 @@ p(
     output$activity_summary_table <- renderDataTable({
       datatable(activity_summary_new(),
                 colnames = c("Financial year",
-                             "Hospital clinical type",
+                             "Hospital - clinical type",
                              "Activity type",
                              "Location",
                              "Rate"),
@@ -513,7 +543,7 @@ p(
     output$drugs_plot <- renderPlotly({
       #first the tooltip label
       tooltip_summary <- paste0(
-        "Hospital clinical type: ",
+        "Hospital - clinical type: ",
         drug_summary_new()$hos_clin_type,
         "<br>",
         "Location: ",
@@ -622,7 +652,7 @@ p(
     output$drugs_table <- renderDataTable({
       datatable(drug_summary_new(),
                 colnames = c("Financial year",
-                             "Hospital clinical type",
+                             "Hospital - clinical type",
                              "Drug type",
                              "Location",
                              "Rate"),
@@ -637,7 +667,7 @@ p(
     output$demographic_plot <- renderPlotly({
       #first the tooltip label
       tooltip_summary <- paste0(
-        "Hospital clinical type: ",
+        "Hospital - clinical type: ",
         demographic_summary_new()$hos_clin_type,
         "<br>",
         "Location: ",
@@ -651,7 +681,7 @@ p(
         "<br>",
         
         
-        "EASR rates: ",
+        "Rate: ",
         demographic_summary_new()$value
       )
       
@@ -697,7 +727,7 @@ p(
                  
                  title = paste0(c(
                    rep("&nbsp;", 20),
-                   "EASR Rates",
+                   "Rate",
                    rep("&nbsp;", 20),
                    rep("\n&nbsp;", 3)
                  ),
@@ -755,7 +785,7 @@ p(
       datatable(demographic_summary_new(),
                 rownames = FALSE,
                 colnames = c("Financial year",
-                             "Hospital clinical type",
+                             "Hospital - clinical type",
                              "Location",
                              input$summary_demographic,
                              "Rate"),
