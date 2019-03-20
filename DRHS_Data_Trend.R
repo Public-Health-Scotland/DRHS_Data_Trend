@@ -90,26 +90,35 @@ demographic_types<-c("Age","Sex", "Deprivation")
   ############## User Interface ----
   ##############################################.
   ui <- fluidPage(
-
+    
     style = "height: 95%; width: 95%; background-color: #FFFFFF;
     border: 0px solid #FFFFFF;",
     h1(tags$b("Data Trends In Scotland")),
     p(
       HTML(
-        "The charts below provide a high level overview of drug related hospital stays in Scotland. This can be viewed at the level of Scotland, NHS Board, or Alcohol and Drug Partnership (ADP). It covers both General/Acute and Psychiatric hospital admissions. Clinical reasons for admission are as a result of either overdose or mental and behavioural reasons.
-          The areas covered are  - 
+        "The charts shown below provide an overview of drug-related general acute
+         and psychiatric hospital stays in Scotland. 
         "), 
-        br(),
+      HTML("The charts show the following analyses over time:"),
       tags$ul(
-      tags$li("Activity Type"),
-      tags$li("Substances"),
-      tags$li("Demographics (Age/Sex/Deprivation)")
+        tags$li("Activity Type (stay rates, patient rates and new patient rates)"),
+        tags$li("Drug Type"),
+        tags$li("Patient demographics (Age/Sex/Deprivation)")
+      ),
+      HTML("Using the drop down boxes, the charts can be modified to show: "),
+      tags$ul(
+        tags$li("data from general acute or psychiatric hospitals
+                (or a combination of both); and "),
+        tags$li("stays associated with mental and behavioural diagnoses, 
+                accidental poisonings/overdoses (or a combination of both); and,"),
+        tags$li("data from a specific NHS Board or Alcohol and Drug Partnership 
+                (ADP) using the drop down boxes ‘Location Type’ and ‘Location’.")
       ),
       HTML(
         "For a more detailed breakdown please consult the [insert link to 
         data explorer when available]"
       )
-      ),
+    ),
     
     tags$ul(
       tags$li(
@@ -139,7 +148,7 @@ demographic_types<-c("Age","Sex", "Deprivation")
         " - click this button to return the axes to their
         default range."
       )
-      ),
+    ),
     
     p(
       br(),
@@ -149,7 +158,7 @@ demographic_types<-c("Age","Sex", "Deprivation")
         may not be additive and may differ to previous
         sources of information."
       )
-      ),
+    ),
     
     p(""),
     
@@ -162,7 +171,7 @@ demographic_types<-c("Age","Sex", "Deprivation")
       #Insert the reactive filters. As location  is dependent on 
       #location type this part has to be set up in the server as a 
       #reactive object and then placed into the UI. 
-     
+      
       column(
         4,
         shinyWidgets::pickerInput(
@@ -172,26 +181,26 @@ demographic_types<-c("Age","Sex", "Deprivation")
           selected = clinical_types[9]
         )
       ),
-     
+      
       column(
         4,
         uiOutput("location_types")
-        ),
+      ),
       column(
         4,
         uiOutput("locations")
       )
     ),
-
-
+    
+    
     #In the main panel of the summary tab, insert the first plot
-br(),
-br(),
+    br(),
+    br(),
     h3("Activity Measure"), 
-br(),
-p("Activity type shows the European Age-sex Standardised Rate (EASR) of the stays,
-  patients, and new patients over time."),
-
+    br(),
+    p("This chart shows drug-related hospital stay rates, patient rates, 
+      and new patient rates over time."),
+    
     mainPanel(
       width = 12,
       plotlyOutput("activity_summary_plot",
@@ -206,15 +215,15 @@ p("Activity type shows the European Age-sex Standardised Rate (EASR) of the stay
       HTML("</div>"),
       br(),
       br()
-),
-
-
-tags$head(
-  tags$style(HTML("hr {border: 1px solid #000000;}"))
-),
-
+    ),
+    
+    
+    tags$head(
+      tags$style(HTML("hr {border: 1px solid #000000;}"))
+    ),
+    
     p(
-
+      
       br(),
       tags$ul(
         tags$li("Insert summary point here [1]"),
@@ -222,13 +231,13 @@ tags$head(
         tags$li("Insert summary point here [3]")
       ),
       hr()
-
+      
     ), 
-h3("Drug type"),
-br(),
-p("Drug type shows the European Age-sex Standardised Rate (EASR) of stays, broken 
-  down by drug type, over time."),
-br(),
+    h3("Drug type"),
+    br(),
+    p("This chart shows drug-related hospital stay rates, broken down by drug 
+      type, over time. "),
+    br(),
     #then insert the drugs plot
     mainPanel(
       width = 12,
@@ -245,30 +254,31 @@ br(),
       br(),
       br()
     ),
-p(
-  
-  br(),
-  tags$ul(
-    tags$li("Insert summary point here [1]"),
-    tags$li("Insert summary point here [2]"),
-    tags$li("Insert summary point here [3]")
-  ),
-  hr()
-  
-),
+    p(
+      
+      br(),
+      tags$ul(
+        tags$li("Insert summary point here [1]"),
+        tags$li("Insert summary point here [2]"),
+        tags$li("Insert summary point here [3]")
+      ),
+      hr()
+      
+    ),
     
     p(
       h3("Demographics"), 
       br(),
       (
-        "Patient EASR over time are shown for the demographic options of Age,
-        Sex and Deprivation. Toggling between the options will show you the 
-        respective graph"  
-    ),
-    br()
+        "This chart shows drug-related hospital patient rates, broken down by age
+        group, sex and deprivation quintile, over time. You can toggle between
+        the age group, sex and deprivation analyses using the blue buttons 
+        above the chart."  
+      ),
+      br()
     ), 
     
-
+    
     #Insert demographic options 
     #This part to be converted into toggle button
     column(
@@ -282,42 +292,42 @@ p(
                          no = icon("remove", lib = "glyphicon")),
         selected = "Age"
       )
-      ),
-      #then final demographic plot
-      mainPanel(
-        width = 12,
-        plotlyOutput("demographic_plot",
-                     width = "1090px",
-                     height = "600px"),
-        HTML("<button data-toggle = 'collapse' href = '#demographic'
+    ),
+    #then final demographic plot
+    mainPanel(
+      width = 12,
+      plotlyOutput("demographic_plot",
+                   width = "1090px",
+                   height = "600px"),
+      HTML("<button data-toggle = 'collapse' href = '#demographic'
                    class = 'btn btn-primary' id = 'demographic_link'> 
                    <strong> Show/hide table </strong></button>"),
-        HTML("<div id = 'demographic' class = 'collapse'>"),
+      HTML("<div id = 'demographic' class = 'collapse'>"),
+      br(),
+      dataTableOutput("demographic_table"),
+      HTML("</div>"),
+      br(),
+      br(), 
+      p(
+        
         br(),
-        dataTableOutput("demographic_table"),
-        HTML("</div>"),
-        br(),
-        br(), 
-        p(
-          
-          br(),
-          tags$ul(
-            tags$li("Insert summary point here [1]"),
-            tags$li("Insert summary point here [2]"),
-            tags$li("Insert summary point here [3]")
-          )
+        tags$ul(
+          tags$li("Insert summary point here [1]"),
+          tags$li("Insert summary point here [2]"),
+          tags$li("Insert summary point here [3]")
         )
       )
-      
+    )
     
-#End of UI part
+    
+    #End of UI part
+    
+  )  
   
-)  
   
-  
-##############################################.
-############## Server ----
-##############################################.
+  ##############################################.
+  ############## Server ----
+  ##############################################.
   
   
   #Beginning of server
@@ -342,19 +352,19 @@ p(
                                     as.character(
                                       activity_summary$geography
                                       [activity_summary$geography_type %in% input$Location_type]
-                                    
+                                      
+                                    )
                                   )
-                                )
       )
     }) 
-
-#need to work out how to get Scotland options in correct order
-#'Scotland', 'Outside Scotland', 'Unknown'
-#levels(factor(location)) %in% input$Location_type
+    
+    #need to work out how to get Scotland options in correct order
+    #'Scotland', 'Outside Scotland', 'Unknown'
+    #levels(factor(location)) %in% input$Location_type
     
     #we can then plot the graph based on the user input.
     #First we create a subset  of the data based on user input
-
+    
     #For the activity summary
     activity_summary_new <- reactive({
       activity_summary %>%
@@ -397,7 +407,7 @@ p(
             & sex != "All"
           ) %>%
           select(year,hos_clin_type,geography,sex,value)
-          
+        
       }
       else if (input$summary_demographic == "Deprivation")
       {
@@ -405,12 +415,12 @@ p(
           filter(hos_clin_type %in% input$Hospital_Clinic_Type
                  & geography %in% input$Location
                  & simd != "All"
-                 )%>%
+          )%>%
           select(year,hos_clin_type,geography,simd,value)
       }
     })
     
-
+    
     #Then we can plot the actual graph, with labels
     
     #Activity Summary plot
@@ -457,8 +467,8 @@ p(
         #add in title to chart
         
         layout(title =
-                 paste0("Hospital rates for ",input$Hospital_Clinic_Type,
-                        " in ", input$Location, " by activity type"),
+                 paste0("Activity type rates for ",input$Hospital_Clinic_Type,
+                        " in ", input$Location),
                
                separators = ".",
                
@@ -534,8 +544,11 @@ p(
                              "Location",
                              "Rate"),
                 rownames = FALSE,
-                style = "Bootstrap"
-                  )
+                style = "Bootstrap", 
+                options = list(searching= FALSE,
+                               lengthChange= FALSE)
+                
+      )
     })
     
     # Substances Plot
@@ -576,7 +589,7 @@ p(
         marker = list(size = 8),
         width = 1000,
         height = 600
-        )%>%
+      )%>%
         
         #add in title to chart
         
@@ -588,7 +601,7 @@ p(
                
                yaxis = list(
                  
-                exponentformat = "none",
+                 exponentformat = "none",
                  
                  separatethousands = TRUE,
                  
@@ -620,7 +633,7 @@ p(
                                              "Financial year",
                                              rep("&nbsp;", 20),
                                              rep("\n&nbsp;", 3)),
-                                          collapse = ""),
+                                           collapse = ""),
                             showline = TRUE,
                             ticks = "outside"),
                
@@ -636,7 +649,7 @@ p(
                showlegend = TRUE,
                legend = list(bgcolor = 'rgba(255, 255, 255, 0)',
                              bordercolor = 'rgba(255, 255, 255, 0)')) %>%
-
+        
         #Remove unnecessary buttons from the modebar.
         
         config(displayModeBar = TRUE,
@@ -657,7 +670,9 @@ p(
                              "Location",
                              "Rate"),
                 rownames = FALSE,
-                style = "Bootstrap"
+                style = "Bootstrap", 
+                options = list(searching= FALSE,
+                               lengthChange= FALSE)
       )
     })
     
@@ -676,7 +691,7 @@ p(
         input$summary_demographic, ": ",
         demographic_summary_new()[,4],
         "<br>",
-      "Financial year: ",
+        "Financial year: ",
         demographic_summary_new()$year,
         "<br>",
         
@@ -702,7 +717,7 @@ p(
         marker = list(size = 8),
         width = 1000,
         height = 600
-        )%>%
+      )%>%
         
         #add in title to chart
         
@@ -764,10 +779,10 @@ p(
                #insert legend
                showlegend = TRUE,
                legend = list(
-                             bgcolor = 'rgba(255, 255, 255, 0)',
-                             bordercolor = 'rgba(255, 255, 255, 0)')) %>%
+                 bgcolor = 'rgba(255, 255, 255, 0)',
+                 bordercolor = 'rgba(255, 255, 255, 0)')) %>%
         
-#        #Remove unnecessary buttons from the modebar.
+        #        #Remove unnecessary buttons from the modebar.
         
         config(displayModeBar = TRUE,
                modeBarButtonsToRemove = list('select2d', 'lasso2d', 'zoomIn2d',
@@ -789,13 +804,15 @@ p(
                              "Location",
                              input$summary_demographic,
                              "Rate"),
-                style = "Bootstrap"
+                style = "Bootstrap", 
+                options = list(searching= FALSE,
+                               lengthChange= FALSE)
       )
     })
     
     #End of server
   }
   #End of script
-  }
+}
 
 shinyApp(ui = ui, server = server)
