@@ -44,29 +44,20 @@ library(RColorBrewer)
 #Current approach to reading in data is to take the SPSS output and then cut it down to 
 #size and then save as csv files for use. 
 
-path<- "\\\\nssstats01\\SubstanceMisuse1\\Topics\\DrugRelatedHospitalStats\\Publications\\DRHS\\20181218\\Temp\\"
+filepath<- "\\\\nssstats01\\SubstanceMisuse1\\Topics\\DrugRelatedHospitalStats\\Publications\\DRHS\\20181218\\Temp\\"
 
 #Data to be used for explorer and trend pages
-all_data<- readRDS(paste0(path,"s06-temp09_num_rate_perc_R-SHINY.rds"))
+all_data<- readRDS(paste0(filepath,"s06-temp09_num_rate_perc_R-SHINY.rds"))
 
+#round the data to nearest two 
 all_data <- all_data %>% mutate(value = round(value, 2))
 
-drug_types<- as.character(unique(all_data$drug_type)[2:7])
 
-activity_summary<-all_data %>% 
-  filter(drug_type == "All", 
-         age_group == "All",
-         sex == "All",
-         simd == "All", 
-         measure == "Rate")
-
-activity_summary<-activity_summary %>% 
-  mutate(activity_type= fct_relevel(activity_type,rev))
 
 #We will manually change the names of factors in R until we have an agreed 
 #terminology for the hospital-clinical type. 
 
-activity_summary<-activity_summary %>% 
+all_data<-all_data %>% 
   mutate(hos_clin_type= fct_recode(hos_clin_type, 
                                    "General Acute and Psychiatric - Combined" = "Combined (SMR01/04) - Combined (Mental & Behavioural/Overdose)",  
                                    "General Acute and Psychiatric - Mental & Behavioural" = "Combined (SMR01/04) - Mental & Behavioural",                      
@@ -78,6 +69,20 @@ activity_summary<-activity_summary %>%
                                    "Psychiatric - Mental & Behavioural" = "Psychiatric (SMR04) - Mental & Behavioural" ,                      
                                    "Psychiatric - Overdose" =  "Psychiatric (SMR04) - Overdose" ))
 
+
+activity_summary<-all_data %>% 
+  filter(drug_type == "All", 
+         age_group == "All",
+         sex == "All",
+         simd == "All", 
+         measure == "Rate")
+
+activity_summary<-activity_summary %>% 
+  mutate(activity_type= fct_relevel(activity_type,rev))
+
+#filter by drug type
+drug_types<- as.character(unique(all_data$drug_type)[2:7])
+
 drug_summary<- all_data %>% 
   filter(activity_type == "Stays",
          drug_type %in% drug_types,
@@ -87,6 +92,7 @@ drug_summary<- all_data %>%
          measure == "Rate") %>% 
   droplevels()
 
+#filter by demography
 demographic_summary<- all_data  %>% 
   filter(drug_type == "All",
          activity_type =="Patients",
@@ -121,7 +127,7 @@ Colour_Scheme<-c('#afeeee','#90cdf5','#1E90FF','#c5e8f7','#84a3b6','#48647a','#0
     
     style = "height: 95%; width: 95%; background-color: #FFFFFF;
     border: 0px solid #FFFFFF;",
-    h1(tags$b("Data Trends In Scotland")),
+    h1(tags$b("Trend Data")),
     p(
       HTML(
         "The charts shown below provide an overview of drug-related general acute
@@ -192,7 +198,13 @@ Colour_Scheme<-c('#afeeee','#90cdf5','#1E90FF','#c5e8f7','#84a3b6','#48647a','#0
         sources of information."
       )
     ),
-    
+    downloadButton(outputId = "download_glossary", 
+                   label = "Download glossary", 
+                   class = "glossary"),
+    tags$head(
+      tags$style(".glossary { background-color: #0072B2; } 
+                          .glossary { color: #FFFFFF; }")
+    ),
     p(""),
     
     wellPanel(
@@ -830,6 +842,17 @@ Colour_Scheme<-c('#afeeee','#90cdf5','#1E90FF','#c5e8f7','#84a3b6','#48647a','#0
                 options = list(searching= FALSE,
                                lengthChange= FALSE)
       )
+      
+      #glossary link - not able to work? 
+      
+      output$download_glossary <- downloadHandler(
+        filename = 'glossary.pdf',
+        content = function(file) {
+          file.copy(paste0(filepath, "www\\glossary.pdf"), file)
+        }
+      )
+      
+      
     })
     
     #End of server
