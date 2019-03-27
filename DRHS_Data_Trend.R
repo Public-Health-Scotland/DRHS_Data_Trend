@@ -31,6 +31,8 @@ library(plotly)
 library(shinyWidgets)
 library(forcats)
 library(DT)
+library(RColorBrewer)
+library(colorspace)
 
 
 ##############################################.
@@ -58,6 +60,10 @@ activity_summary<-all_data %>%
          simd == "All", 
          measure == "Rate")
 
+
+activity_summary$activity_type<-factor(activity_summary$activity_type,
+                                       levels = c("Stays", "Patients","New patients"))
+  
 drug_summary<- all_data %>% 
   filter(activity_type == "Stays",
          drug_type %in% drug_types,
@@ -82,6 +88,14 @@ clinical_types <- as.character(unique(activity_summary$hos_clin_type))
 location_types <- as.character(unique(activity_summary$geography_type))
 
 demographic_types<-c("Age","Sex", "Deprivation")
+
+
+#For colour 
+#Colour Scheme 1
+Colour_Scheme<-c('#afeeee','#90cdf5','#1E90FF','#c5e8f7','#84a3b6','#48647a','#0c2a42')
+#Alternative Colour Schemes
+#Colour_Scheme<-c('#2195f2','#0000FF','#4cbeed','#c5e8f7','#84a3b6','#48647a','#0c2a42')
+#Colour_Scheme<-c(brewer.pal(7, "Paired"))
 
 
 #Beginning of script
@@ -191,6 +205,7 @@ demographic_types<-c("Age","Sex", "Deprivation")
         uiOutput("locations")
       )
     ),
+   
     
     
     #In the main panel of the summary tab, insert the first plot
@@ -234,10 +249,12 @@ demographic_types<-c("Age","Sex", "Deprivation")
       
     ), 
     h3("Drug type"),
+  
     br(),
     p("This chart shows drug-related hospital stay rates, broken down by drug 
       type, over time. "),
     br(),
+    
     #then insert the drugs plot
     mainPanel(
       width = 12,
@@ -268,6 +285,7 @@ demographic_types<-c("Age","Sex", "Deprivation")
     
     p(
       h3("Demographics"), 
+      
       br(),
       (
         "This chart shows drug-related hospital patient rates, broken down by age
@@ -282,7 +300,7 @@ demographic_types<-c("Age","Sex", "Deprivation")
     #Insert demographic options 
     #This part to be converted into toggle button
     column(
-      width = 4,
+      width = 5,
       shinyWidgets::radioGroupButtons(
         inputId = "summary_demographic",
         label = "Show: ",
@@ -429,12 +447,6 @@ demographic_types<-c("Age","Sex", "Deprivation")
     output$activity_summary_plot <- renderPlotly({
       #first the tooltip label
       tooltip_summary <- paste0(
-        "Hospital - clinical type: ",
-        activity_summary_new()$hos_clin_type,
-        "<br>",
-        "Location: ",
-        activity_summary_new()$geography,
-        "<br>",
         "Activity type: ", 
         activity_summary_new()$activity_type,
         "<br>",
@@ -453,6 +465,7 @@ demographic_types<-c("Age","Sex", "Deprivation")
         x = ~  year,
         y = ~  value,
         color = ~  activity_type,
+        colors = ~ Colour_Scheme,
         #tooltip
         text = tooltip_summary,
         hoverinfo = "text",
@@ -556,12 +569,6 @@ demographic_types<-c("Age","Sex", "Deprivation")
     output$drugs_plot <- renderPlotly({
       #first the tooltip label
       tooltip_summary <- paste0(
-        "Hospital - clinical type: ",
-        drug_summary_new()$hos_clin_type,
-        "<br>",
-        "Location: ",
-        drug_summary_new()$geography,
-        "<br>",
         "Drug type: ",
         drug_summary_new()$drug_type,
         "<br>",
@@ -580,6 +587,7 @@ demographic_types<-c("Age","Sex", "Deprivation")
         x = ~  year,
         y = ~  value,
         color = ~  drug_type,
+        colors = ~ Colour_Scheme,
         #tooltip
         text = tooltip_summary,
         hoverinfo = "text",
@@ -682,12 +690,6 @@ demographic_types<-c("Age","Sex", "Deprivation")
     output$demographic_plot <- renderPlotly({
       #first the tooltip label
       tooltip_summary <- paste0(
-        "Hospital - clinical type: ",
-        demographic_summary_new()$hos_clin_type,
-        "<br>",
-        "Location: ",
-        demographic_summary_new()$geography,
-        "<br>",
         input$summary_demographic, ": ",
         demographic_summary_new()[,4],
         "<br>",
@@ -708,6 +710,7 @@ demographic_types<-c("Age","Sex", "Deprivation")
         x = ~  year,
         y = ~  value,
         color = ~  demographic_summary_new()[,4],
+        colors = ~ Colour_Scheme,
         #tooltip
         text = tooltip_summary,
         hoverinfo = "text",
