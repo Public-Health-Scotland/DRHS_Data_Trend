@@ -205,6 +205,7 @@ Colour_Scheme<-c('#afeeee','#90cdf5','#1E90FF','#c5e8f7','#84a3b6','#48647a','#0
       tags$style(".glossary { background-color: #0072B2; } 
                           .glossary { color: #FFFFFF; }")
     ),
+
     p(""),
     
     wellPanel(
@@ -367,8 +368,6 @@ Colour_Scheme<-c('#afeeee','#90cdf5','#1E90FF','#c5e8f7','#84a3b6','#48647a','#0
         )
       )
     )
-    
-    
     #End of UI part
     
   )  
@@ -843,8 +842,11 @@ Colour_Scheme<-c('#afeeee','#90cdf5','#1E90FF','#c5e8f7','#84a3b6','#48647a','#0
                                lengthChange= FALSE)
       )
       
-      #glossary link - not able to work? 
+       
+    })
       
+    #glossary link
+    
       output$download_glossary <- downloadHandler(
         filename = 'glossary.pdf',
         content = function(file) {
@@ -852,9 +854,6 @@ Colour_Scheme<-c('#afeeee','#90cdf5','#1E90FF','#c5e8f7','#84a3b6','#48647a','#0
         }
       )
       
-      
-    })
-    
     #End of server
   }
   #End of script
