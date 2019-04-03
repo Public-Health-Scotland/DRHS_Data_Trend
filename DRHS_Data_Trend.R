@@ -47,7 +47,11 @@ library(RColorBrewer)
 filepath<- "\\\\nssstats01\\SubstanceMisuse1\\Topics\\DrugRelatedHospitalStats\\Publications\\DRHS\\20181218\\Temp\\"
 
 #Data to be used for explorer and trend pages
-all_data<- readRDS(paste0(filepath,"s06-temp09_num_rate_perc_R-SHINY.rds"))
+all_data<- readRDS(paste0(filepath,"s06-temp09_num_rate_perc_R-SHINY_ROUNDED.rds"))
+#need to rename the final column as value
+all_data<-all_data %>% 
+  rename("value" = value_Roun)
+
 
 #round the data to nearest two 
 all_data <- all_data %>% mutate(value = round(value, 2))
