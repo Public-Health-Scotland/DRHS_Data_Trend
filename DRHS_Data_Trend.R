@@ -532,7 +532,7 @@ Colour_Scheme<-c('#afeeee','#90cdf5','#1E90FF','#c5e8f7','#84a3b6','#48647a','#0
                  
                  title = paste0(c(
                    rep("&nbsp;", 20),
-                   "Rate",
+                   "EASR per 100,000",
                    rep("&nbsp;", 20),
                    rep("\n&nbsp;", 3)
                  ),
@@ -548,7 +548,8 @@ Colour_Scheme<-c('#afeeee','#90cdf5','#1E90FF','#c5e8f7','#84a3b6','#48647a','#0
                #Wrap the x axis title in blank spaces so that it doesn't...
                #overlap with the x axis tick labels.
                
-               xaxis = list(tickangle = -45,
+               xaxis = list(range = c(-1,22),
+                            tickangle = -45,
                             title = paste0(c(rep("&nbsp;", 20),
                                              "<br>",
                                              "Financial year",
@@ -654,7 +655,7 @@ Colour_Scheme<-c('#afeeee','#90cdf5','#1E90FF','#c5e8f7','#84a3b6','#48647a','#0
                  
                  title = paste0(c(
                    rep("&nbsp;", 20),
-                   "Rate",
+                   "EASR per 100,000",
                    rep("&nbsp;", 20),
                    rep("\n&nbsp;", 3)
                  ),
@@ -670,7 +671,8 @@ Colour_Scheme<-c('#afeeee','#90cdf5','#1E90FF','#c5e8f7','#84a3b6','#48647a','#0
                #Wrap the x axis title in blank spaces so that it doesn't...
                #overlap with the x axis tick labels.
                
-               xaxis = list(tickangle = -45,
+               xaxis = list(range = c(-1,22),
+                            tickangle = -45,
                             title = paste0(c(rep("&nbsp;", 20),
                                              "<br>",
                                              "Financial year",
@@ -797,7 +799,7 @@ Colour_Scheme<-c('#afeeee','#90cdf5','#1E90FF','#c5e8f7','#84a3b6','#48647a','#0
                  
                  title = paste0(c(
                    rep("&nbsp;", 20),
-                   "Rate",
+                   "EASR per 100,000",
                    rep("&nbsp;", 20),
                    rep("\n&nbsp;", 3)
                  ),
@@ -813,7 +815,8 @@ Colour_Scheme<-c('#afeeee','#90cdf5','#1E90FF','#c5e8f7','#84a3b6','#48647a','#0
                #Wrap the x axis title in blank spaces so that it doesn't...
                #overlap with the x axis tick labels.
                
-               xaxis = list(tickangle = -45,
+               xaxis = list(range = c(-1,22),
+                            tickangle = -45,
                             title = paste0(c(rep("&nbsp;", 20),
                                              "<br>",
                                              "Financial year",
