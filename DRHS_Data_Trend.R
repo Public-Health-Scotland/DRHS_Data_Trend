@@ -32,7 +32,7 @@ library(shinyWidgets)
 library(forcats)
 library(DT)
 library(RColorBrewer)
-
+library(stringr)
 
 
 ##############################################.
@@ -515,8 +515,9 @@ Colour_Scheme<-c('#afeeee','#90cdf5','#1E90FF','#c5e8f7','#84a3b6','#48647a','#0
         #add in title to chart
         
         layout(title =
-                 paste0("Activity type rates for ",input$Hospital_Clinic_Type,
-                        " in ", input$Location),
+                 ( paste0(str_to_sentence(paste0("Activity type rates for ",
+                                         input$Hospital_Clinic_Type,
+                        " in ")), input$Location)),
                
                separators = ".",
                
@@ -638,8 +639,9 @@ Colour_Scheme<-c('#afeeee','#90cdf5','#1E90FF','#c5e8f7','#84a3b6','#48647a','#0
         #add in title to chart
         
         layout(title =
-                 paste0("Stay rates for ",input$Hospital_Clinic_Type,
-                        " in ", input$Location, " by drug type"),
+                 paste0(str_to_sentence(paste0("Stay rates for ",
+                                               input$Hospital_Clinic_Type,
+                        " in ")), input$Location, " by drug type"),
                
                separators = ".",
                
@@ -765,23 +767,23 @@ Colour_Scheme<-c('#afeeee','#90cdf5','#1E90FF','#c5e8f7','#84a3b6','#48647a','#0
         layout(title = (
           if (input$summary_demographic == "Deprivation")
           {
-            paste0("Patient rates for ",
+            paste0(str_to_sentence(paste0("Patient rates for ",
                    input$Hospital_Clinic_Type,
-                   " in ", input$Location, 
-                   " by Deprivation Quintile")
+                   " in ")), input$Location, 
+                   " by deprivation quintile")
           }
           else if (input$summary_demographic == "Age")
           {
-            paste0("Patient rates for ",
+            paste0(str_to_sentence(paste0("Patient rates for ",
                    input$Hospital_Clinic_Type,
-                   " in ", input$Location, 
-                   " by Age Group")
+                   " in ")), input$Location, 
+                   " by age group")
           }
           else {
-            paste0("Patient rates for ",
+            paste0(str_to_sentence(paste0("Patient rates for ",
                    input$Hospital_Clinic_Type,
-                   " in ", input$Location, 
-                   " by Sex")
+                   " in ")), input$Location, 
+                   " by sex")
           }
         ),
                
