@@ -47,10 +47,10 @@ library(RColorBrewer)
 filepath<- "\\\\nssstats01\\SubstanceMisuse1\\Topics\\DrugRelatedHospitalStats\\Publications\\DRHS\\20181218\\Temp\\"
 
 #Data to be used for explorer and trend pages
-all_data<- readRDS(paste0(filepath,"s06-temp09_num_rate_perc_R-SHINY_ROUNDED.rds"))
+all_data<- readRDS(paste0(filepath,"s06-temp09_num_rate_perc_R-SHINY_rounded.rds"))
 #need to rename the final column as value
 all_data<-all_data %>% 
-  rename("value" = value_Roun)
+  rename("value" = value_Round)
 
 
 #round the data to nearest two 
@@ -146,7 +146,7 @@ Colour_Scheme<-c('#afeeee','#90cdf5','#1E90FF','#c5e8f7','#84a3b6','#48647a','#0
       HTML("Using the drop down boxes, the charts can be modified to show: "),
       tags$ul(
         tags$li("data from general acute or psychiatric hospitals
-                (or a combination of both); and "),
+                (or a combination of both);"),
         tags$li("stays associated with mental and behavioural diagnoses, 
                 accidental poisonings/overdoses (or a combination of both); and,"),
         tags$li("data from a specific NHS Board or Alcohol and Drug Partnership 
@@ -158,38 +158,39 @@ Colour_Scheme<-c('#afeeee','#90cdf5','#1E90FF','#c5e8f7','#84a3b6','#48647a','#0
       )
     ),
     
+    HTML("To view your data selection in a table, use the 'Show/hide table' button
+         below each chart. Individual trend lines can be hidden by clicking on the
+         labels shown in the chart legend. At the top-right corner of the chart, 
+         you will see a toolbar with four buttons:"),
+    br(),
+    br(),
     tags$ul(
       tags$li(
-        tags$b("Download plot as a png"),
         icon("camera"),
+        tags$b("Download plot as a png"),
         " - click this button to save the graph as an image
         (please note that Internet Explorer does not support this
         function)."
       ),
       tags$li(
-        tags$b("Zoom"),
         icon("search"),
+        tags$b("Zoom"),
         " - zoom into the graph by clicking this button and then
         clicking and dragging your mouse over the area of the
         graph you are interested in."
       ),
       tags$li(
-        tags$b("Pan"),
         icon("move", lib = "glyphicon"),
+        tags$b("Pan"),
         " - adjust the axes of the graph by clicking this button
         and then clicking and moving your mouse in any direction
         you want."
       ),
       tags$li(
-        tags$b("Reset axes"),
         icon("home"),
+        tags$b("Reset axes"),
         " - click this button to return the axes to their
         default range."
-      ),
-      tags$li(
-        tags$b("Select lines"),
-        " - click once on a legend entry to remove it from the chart. Double 
-        click to isolate it"
       )
     ),
     
@@ -759,11 +760,28 @@ Colour_Scheme<-c('#afeeee','#90cdf5','#1E90FF','#c5e8f7','#84a3b6','#48647a','#0
         #add in title to chart
         
         
-        layout(title =
-                 paste0("Patient rates for ",
-                        input$Hospital_Clinic_Type,
-                        " in ", input$Location, 
-                        " by ", input$summary_demographic),
+        layout(title = (
+          if (input$summary_demographic == "Deprivation")
+          {
+            paste0("Patient rates for ",
+                   input$Hospital_Clinic_Type,
+                   " in ", input$Location, 
+                   " by Deprivation Quintile")
+          }
+          else if (input$summary_demographic == "Age")
+          {
+            paste0("Patient rates for ",
+                   input$Hospital_Clinic_Type,
+                   " in ", input$Location, 
+                   " by Age Group")
+          }
+          else {
+            paste0("Patient rates for ",
+                   input$Hospital_Clinic_Type,
+                   " in ", input$Location, 
+                   " by Sex")
+          }
+        ),
                
                separators = ".",
                
