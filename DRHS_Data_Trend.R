@@ -35,6 +35,7 @@ library(RColorBrewer)
 library(stringr)
 
 
+
 ##############################################.
 ############## Data Input ----
 ##############################################.
@@ -84,6 +85,13 @@ activity_summary<-all_data %>%
 activity_summary<-activity_summary %>% 
   mutate(activity_type= fct_relevel(activity_type,rev))
 
+#Separate out the two columns (will do in SPSS later)
+activity_summary<- activity_summary %>% 
+  mutate(hos_type = word(activity_summary$hos_clin_type,sep=" - "))
+
+activity_summary<- activity_summary %>% 
+  mutate(clin_type = word(activity_summary$hos_clin_type,sep=" - ", start = -1))
+
 #filter by drug type
 drug_types<- as.character(unique(all_data$drug_type)[2:7])
 
@@ -96,6 +104,14 @@ drug_summary<- all_data %>%
          measure == "Rate") %>% 
   droplevels()
 
+#Separate out the two columns (will do in SPSS later)
+drug_summary<- drug_summary %>% 
+  mutate(hos_type = word(drug_summary$hos_clin_type,sep=" - "))
+
+drug_summary<- drug_summary %>% 
+  mutate(clin_type = word(drug_summary$hos_clin_type,sep=" - ", start = -1))
+
+
 #filter by demography
 demographic_summary<- all_data  %>% 
   filter(drug_type == "All",
@@ -105,11 +121,22 @@ demographic_summary<- all_data  %>%
             (age_group == "All" & sex == "All" & simd !="All")), 
          measure == "Rate") 
 
+#Separate out the two columns (will do in SPSS later)
+demographic_summary<- demographic_summary %>% 
+  mutate(hos_type = word(demographic_summary$hos_clin_type,sep=" - "))
+
+demographic_summary<- demographic_summary %>% 
+  mutate(clin_type = word(demographic_summary$hos_clin_type,sep=" - ", start = -1))
+
 
 
 #we will also set user input options
-clinical_types <- as.character(unique(activity_summary$hos_clin_type))
-location_types <- as.character(unique(activity_summary$geography_type))
+hospital_types <- as.character(unique(activity_summary$hos_type))
+clinical_types <- as.character(unique(activity_summary$clin_type))
+locations <- as.character(unique(activity_summary$geography))
+location_types<-list("Scotland" = locations[1],
+                     "NHS Board of residence" = locations[2:15],
+                     "ADP of residence" = locations[16:46])
 
 demographic_types<-c("Age","Sex", "Deprivation")
 
@@ -226,20 +253,29 @@ Colour_Scheme<-c('#afeeee','#90cdf5','#1E90FF','#c5e8f7','#84a3b6','#48647a','#0
       column(
         4,
         shinyWidgets::pickerInput(
-          inputId = "Hospital_Clinic_Type",
-          label = "Select hospital - clinical type",
-          choices = clinical_types,
-          selected = clinical_types[9]
+          inputId = "Hospital_Type",
+          label = "Select hospital type",
+          choices = hospital_types
         )
       ),
       
       column(
         4,
-        uiOutput("location_types")
+        shinyWidgets::pickerInput(
+          inputId = "Clinical_Type",
+          label = "Select clinical type",
+          choices = clinical_types
+        )
       ),
       column(
         4,
-        uiOutput("locations")
+        shinyWidgets::pickerInput(
+          inputId = "Location",
+          label = "Select location",
+          choices = location_types,
+          options = list(size=5, 
+                         `live-search`=TRUE)
+        )
       )
     ),
    
@@ -343,8 +379,7 @@ Colour_Scheme<-c('#afeeee','#90cdf5','#1E90FF','#c5e8f7','#84a3b6','#48647a','#0
         label = "Show: ",
         choices = demographic_types,
         status = "primary",justified = TRUE,
-        checkIcon = list(yes = icon("ok", lib = "glyphicon"), 
-                         no = icon("remove", lib = "glyphicon")),
+        checkIcon = list(yes = icon("ok", lib = "glyphicon")),
         selected = "Age"
       )
     ),
@@ -386,35 +421,8 @@ Colour_Scheme<-c('#afeeee','#90cdf5','#1E90FF','#c5e8f7','#84a3b6','#48647a','#0
   #Beginning of server
   server  <-  function(input, output)
   {
-    #We first need to set up the location type and location options 
-    #so that they location options are dependent on location type
-    
-    output$location_types <- renderUI({
-      shinyWidgets::pickerInput(inputId = "Location_type", 
-                                label = "Select location type ",
-                                choices = location_types, 
-                                selected = "Scotland")
-    })
-    
-    output$locations <- renderUI({
-      shinyWidgets::pickerInput(inputId = "Location",
-                                label = "Select location", 
-                                options = list(size=5),
-                                choices = 
-                                  unique(
-                                    as.character(
-                                      activity_summary$geography
-                                      [activity_summary$geography_type %in% input$Location_type]
-                                      
-                                    )
-                                  )
-      )
-    }) 
-    
-    #need to work out how to get Scotland options in correct order
-    #'Scotland', 'Outside Scotland', 'Unknown'
-    #levels(factor(location)) %in% input$Location_type
-    
+
+
     #we can then plot the graph based on the user input.
     #First we create a subset  of the data based on user input
     
@@ -422,20 +430,22 @@ Colour_Scheme<-c('#afeeee','#90cdf5','#1E90FF','#c5e8f7','#84a3b6','#48647a','#0
     activity_summary_new <- reactive({
       activity_summary %>%
         filter(
-          hos_clin_type %in% input$Hospital_Clinic_Type
+          hos_type %in% input$Hospital_Type
+          & clin_type %in% input$Clinical_Type
           & geography %in% input$Location
         )%>%
-        select(year,hos_clin_type, activity_type,geography,value)
+        select(year,hos_type, clin_type, activity_type,geography,value)
     })
     
     #for the substances summary
     drug_summary_new <- reactive({
       drug_summary %>%
         filter(
-          hos_clin_type %in% input$Hospital_Clinic_Type
+          hos_type %in% input$Hospital_Type
+          & clin_type %in% input$Clinical_Type
           & geography %in% input$Location
         )%>%
-        select(year,hos_clin_type,drug_type,geography,value)
+        select(year,hos_type,clin_type,drug_type,geography,value)
     })
     
     #for the demographic summary
@@ -446,30 +456,33 @@ Colour_Scheme<-c('#afeeee','#90cdf5','#1E90FF','#c5e8f7','#84a3b6','#48647a','#0
       {
         demographic_summary %>%
           filter(
-            hos_clin_type %in% input$Hospital_Clinic_Type
+            hos_type %in% input$Hospital_Type
+            & clin_type %in% input$Clinical_Type
             & geography %in% input$Location
             & age_group != "All"
           )%>%
-          select(year,hos_clin_type,geography,age_group,value)
+          select(year,hos_type,clin_type,geography,age_group,value)
       }
       else if(input$summary_demographic == "Sex")
       {demographic_summary %>%
           filter(
-            hos_clin_type %in% input$Hospital_Clinic_Type
+            hos_type %in% input$Hospital_Type
+            & clin_type %in% input$Clinical_Type
             & geography %in% input$Location
             & sex != "All"
           ) %>%
-          select(year,hos_clin_type,geography,sex,value)
+          select(year,hos_type,clin_type,geography,sex,value)
         
       }
       else if (input$summary_demographic == "Deprivation")
       {
         demographic_summary %>%
-          filter(hos_clin_type %in% input$Hospital_Clinic_Type
+          filter(hos_type %in% input$Hospital_Type
+                 & clin_type %in% input$Clinical_Type
                  & geography %in% input$Location
                  & simd != "All"
           )%>%
-          select(year,hos_clin_type,geography,simd,value)
+          select(year,hos_type,clin_type,geography,simd,value)
       }
     })
     
@@ -516,8 +529,9 @@ Colour_Scheme<-c('#afeeee','#90cdf5','#1E90FF','#c5e8f7','#84a3b6','#48647a','#0
         
         layout(title =
                  ( paste0(str_to_sentence(paste0("Activity type rates for ",
-                                         input$Hospital_Clinic_Type,
-                        " in ")), input$Location)),
+                                         input$Hospital_Type,
+                        " hospitals as result of ", 
+                        input$Clinical_Type, " in ")), input$Location)),
                
                separators = ".",
                
@@ -589,7 +603,8 @@ Colour_Scheme<-c('#afeeee','#90cdf5','#1E90FF','#c5e8f7','#84a3b6','#48647a','#0
     output$activity_summary_table <- renderDataTable({
       datatable(activity_summary_new(),
                 colnames = c("Financial year",
-                             "Hospital - clinical type",
+                             "Hospital type",
+                             "Clinical type",
                              "Activity type",
                              "Location",
                              "Rate"),
@@ -640,8 +655,10 @@ Colour_Scheme<-c('#afeeee','#90cdf5','#1E90FF','#c5e8f7','#84a3b6','#48647a','#0
         
         layout(title =
                  paste0(str_to_sentence(paste0("Stay rates for ",
-                                               input$Hospital_Clinic_Type,
-                        " in ")), input$Location, " by drug type"),
+                                               input$Hospital_Type,
+                                               " hospitals as result of ", 
+                                               input$Clinical_Type, " in ")), 
+                        input$Location, " by drug type"),
                
                separators = ".",
                
@@ -712,7 +729,8 @@ Colour_Scheme<-c('#afeeee','#90cdf5','#1E90FF','#c5e8f7','#84a3b6','#48647a','#0
     output$drugs_table <- renderDataTable({
       datatable(drug_summary_new(),
                 colnames = c("Financial year",
-                             "Hospital - clinical type",
+                             "Hospital type",
+                             "Clinical type",
                              "Drug type",
                              "Location",
                              "Rate"),
@@ -748,7 +766,7 @@ Colour_Scheme<-c('#afeeee','#90cdf5','#1E90FF','#c5e8f7','#84a3b6','#48647a','#0
         #plot- we wont bother at this point with tailored colour
         x = ~  year,
         y = ~  value,
-        color = ~  demographic_summary_new()[,4],
+        color = ~  demographic_summary_new()[,5],
         colors = ~ Colour_Scheme,
         #tooltip
         text = tooltip_summary,
@@ -768,21 +786,27 @@ Colour_Scheme<-c('#afeeee','#90cdf5','#1E90FF','#c5e8f7','#84a3b6','#48647a','#0
           if (input$summary_demographic == "Deprivation")
           {
             paste0(str_to_sentence(paste0("Patient rates for ",
-                   input$Hospital_Clinic_Type,
-                   " in ")), input$Location, 
+                                          input$Hospital_Type,
+                                          " hospitals as result of ", 
+                                          input$Clinical_Type, " in ")),
+                   input$Location, 
                    " by deprivation quintile")
           }
           else if (input$summary_demographic == "Age")
           {
             paste0(str_to_sentence(paste0("Patient rates for ",
-                   input$Hospital_Clinic_Type,
-                   " in ")), input$Location, 
+                                          input$Hospital_Type,
+                                          " hospitals as result of ", 
+                                          input$Clinical_Type, " in ")),
+                   input$Location, 
                    " by age group")
           }
           else {
             paste0(str_to_sentence(paste0("Patient rates for ",
-                   input$Hospital_Clinic_Type,
-                   " in ")), input$Location, 
+                                          input$Hospital_Type,
+                                          " hospitals as result of ", 
+                                          input$Clinical_Type, " in ")),
+                   input$Location, 
                    " by sex")
           }
         ),
@@ -850,6 +874,8 @@ Colour_Scheme<-c('#afeeee','#90cdf5','#1E90FF','#c5e8f7','#84a3b6','#48647a','#0
                                              'toggleSpikelines',
                                              'hoverCompareCartesian',
                                              'hoverClosestCartesian'),
+               toImageButtonOptions =list(title = 'Download chart image',
+                                          format = "jpeg"),
                displaylogo = F, collaborate = F, editable = F)
       
     })
@@ -860,7 +886,8 @@ Colour_Scheme<-c('#afeeee','#90cdf5','#1E90FF','#c5e8f7','#84a3b6','#48647a','#0
       datatable(demographic_summary_new(),
                 rownames = FALSE,
                 colnames = c("Financial year",
-                             "Hospital - clinical type",
+                             "Hospital type",
+                             "Clinical type",
                              "Location",
                              input$summary_demographic,
                              "Rate"),
