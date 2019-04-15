@@ -60,21 +60,19 @@ all_data <- all_data %>% mutate(value = round(value, 2))
 
 
 #We will manually change the names of factors in R until we have an agreed 
-#terminology for the hospital-clinical type. 
+#terminology for the hospital and clinical types. 
 
 all_data<-all_data %>% 
-  mutate(hos_clin_type= fct_recode(hos_clin_type, 
-                                   "General Acute and Psychiatric - Combined" = "Combined (SMR01/04) - Combined (Mental & Behavioural/Overdose)",  
-                                   "General Acute and Psychiatric - Mental & Behavioural" = "Combined (SMR01/04) - Mental & Behavioural",                      
-                                   "General Acute and Psychiatric - Overdose" = "Combined (SMR01/04) - Overdose" ,                                  
-                                   "General acute - Combined" =  "General acute (SMR01) - Combined (Mental & Behavioural/Overdose)",
-                                   "General acute - Mental & Behavioural" = "General acute (SMR01) - Mental & Behavioural",                    
-                                   "General acute - Overdose" =  "General acute (SMR01) - Overdose" ,                               
-                                   "Psychiatric - Combined" = "Psychiatric (SMR04) - Combined (Mental & Behavioural/Overdose)" ,  
-                                   "Psychiatric - Mental & Behavioural" = "Psychiatric (SMR04) - Mental & Behavioural" ,                      
-                                   "Psychiatric - Overdose" =  "Psychiatric (SMR04) - Overdose" ))
+  mutate(hospital_type= fct_recode(hospital_type, 
+                                   "General acute"= "General acute (SMR01)",
+                                   "Psychiatric" ="Psychiatric (SMR04)",
+                                   "Combined gen.acute/psych." = "Combined (General acute/Psychiatric)"))
 
+all_data<-all_data %>% 
+  mutate(clinical_type= fct_recode(clinical_type, 
+                                   "Combined men.&beh./over." = "Combined (Mental and Behavioural/Overdose)"))
 
+         
 activity_summary<-all_data %>% 
   filter(drug_type == "All", 
          age_group == "All",
@@ -84,13 +82,6 @@ activity_summary<-all_data %>%
 
 activity_summary<-activity_summary %>% 
   mutate(activity_type= fct_relevel(activity_type,rev))
-
-#Separate out the two columns (will do in SPSS later)
-activity_summary<- activity_summary %>% 
-  mutate(hos_type = word(activity_summary$hos_clin_type,sep=" - "))
-
-activity_summary<- activity_summary %>% 
-  mutate(clin_type = word(activity_summary$hos_clin_type,sep=" - ", start = -1))
 
 #filter by drug type
 drug_types<- as.character(unique(all_data$drug_type)[2:7])
@@ -103,14 +94,6 @@ drug_summary<- all_data %>%
          simd == "All", 
          measure == "Rate") %>% 
   droplevels()
-
-#Separate out the two columns (will do in SPSS later)
-drug_summary<- drug_summary %>% 
-  mutate(hos_type = word(drug_summary$hos_clin_type,sep=" - "))
-
-drug_summary<- drug_summary %>% 
-  mutate(clin_type = word(drug_summary$hos_clin_type,sep=" - ", start = -1))
-
 
 #filter by demography
 demographic_summary<- all_data  %>% 
@@ -131,8 +114,8 @@ demographic_summary<- demographic_summary %>%
 
 
 #we will also set user input options
-hospital_types <- as.character(unique(activity_summary$hos_type))
-clinical_types <- as.character(unique(activity_summary$clin_type))
+hospital_types <- as.character(unique(activity_summary$hospital_type))
+clinical_types <- as.character(unique(activity_summary$clinical_type))
 locations <- as.character(unique(activity_summary$geography))
 location_types<-list("Scotland" = locations[1],
                      "NHS Board of residence" = locations[2:15],
@@ -438,22 +421,22 @@ Colour_Scheme<-c('#006ddb',
     activity_summary_new <- reactive({
       activity_summary %>%
         filter(
-          hos_type %in% input$Hospital_Type
-          & clin_type %in% input$Clinical_Type
+          hospital_type %in% input$Hospital_Type
+          & clinical_type %in% input$Clinical_Type
           & geography %in% input$Location
         )%>%
-        select(year,hos_type, clin_type, activity_type,geography,value)
+        select(year,hospital_type, clinical_type, activity_type,geography,value)
     })
     
     #for the substances summary
     drug_summary_new <- reactive({
       drug_summary %>%
         filter(
-          hos_type %in% input$Hospital_Type
-          & clin_type %in% input$Clinical_Type
+          hospital_type %in% input$Hospital_Type
+          & clinical_type %in% input$Clinical_Type
           & geography %in% input$Location
         )%>%
-        select(year,hos_type,clin_type,drug_type,geography,value)
+        select(year,hospital_type,clinical_type,drug_type,geography,value)
     })
     
     #for the demographic summary
@@ -464,35 +447,35 @@ Colour_Scheme<-c('#006ddb',
       {
         demographic_summary %>%
           filter(
-            hos_type %in% input$Hospital_Type
-            & clin_type %in% input$Clinical_Type
+            hospital_type %in% input$Hospital_Type
+            & clinical_type %in% input$Clinical_Type
             & geography %in% input$Location
             & age_group != "All"
           )%>%
-          select(year,hos_type,clin_type,geography,age_group,value)%>% 
+          select(year,hospital_type,clinical_type,geography,age_group,value)%>% 
           droplevels()
       }
       else if(input$summary_demographic == "Sex")
       {demographic_summary %>%
           filter(
-            hos_type %in% input$Hospital_Type
-            & clin_type %in% input$Clinical_Type
+            hospital_type %in% input$Hospital_Type
+            & clinical_type %in% input$Clinical_Type
             & geography %in% input$Location
             & sex != "All"
           ) %>%
-          select(year,hos_type,clin_type,geography,sex,value)%>% 
+          select(year,hospital_type,clinical_type,geography,sex,value)%>% 
           droplevels()
         
       }
       else if (input$summary_demographic == "Deprivation")
       {
         demographic_summary %>%
-          filter(hos_type %in% input$Hospital_Type
-                 & clin_type %in% input$Clinical_Type
+          filter(hospital_type %in% input$Hospital_Type
+                 & clinical_type %in% input$Clinical_Type
                  & geography %in% input$Location
                  & simd != "All"
           )%>%
-          select(year,hos_type,clin_type,geography,simd,value)%>% 
+          select(year,hospital_type,clinical_type,geography,simd,value)%>% 
           droplevels()
       }
     })
