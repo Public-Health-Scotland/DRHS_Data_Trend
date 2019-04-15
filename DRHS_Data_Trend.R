@@ -143,11 +143,19 @@ demographic_types<-c("Age","Sex", "Deprivation")
 
 #For colour 
 #Colour Scheme 1 - currently blue
-Colour_Scheme<-c('#afeeee','#90cdf5','#1E90FF','#c5e8f7','#84a3b6','#48647a','#0c2a42')
+#Colour_Scheme<-c('#afeeee','#90cdf5','#1E90FF','#c5e8f7','#84a3b6','#48647a','#0c2a42')
 #Alternative Colour Schemes
 #Colour_Scheme<-c('#2195f2','#0000FF','#4cbeed','#c5e8f7','#84a3b6','#48647a','#0c2a42')
 #Colour_Scheme<-c(brewer.pal(7, "Paired"))
 
+#Colour blind friendly colour scheme
+Colour_Scheme<-c('#006ddb',
+                 '#db6d00',
+                 '#920000',
+                 '#ffb6db',
+                 '#490092',
+                 '#6db6ff',
+                 '#004949')
 
 #Beginning of script
 {
@@ -461,7 +469,8 @@ Colour_Scheme<-c('#afeeee','#90cdf5','#1E90FF','#c5e8f7','#84a3b6','#48647a','#0
             & geography %in% input$Location
             & age_group != "All"
           )%>%
-          select(year,hos_type,clin_type,geography,age_group,value)
+          select(year,hos_type,clin_type,geography,age_group,value)%>% 
+          droplevels()
       }
       else if(input$summary_demographic == "Sex")
       {demographic_summary %>%
@@ -471,7 +480,8 @@ Colour_Scheme<-c('#afeeee','#90cdf5','#1E90FF','#c5e8f7','#84a3b6','#48647a','#0
             & geography %in% input$Location
             & sex != "All"
           ) %>%
-          select(year,hos_type,clin_type,geography,sex,value)
+          select(year,hos_type,clin_type,geography,sex,value)%>% 
+          droplevels()
         
       }
       else if (input$summary_demographic == "Deprivation")
@@ -482,7 +492,8 @@ Colour_Scheme<-c('#afeeee','#90cdf5','#1E90FF','#c5e8f7','#84a3b6','#48647a','#0
                  & geography %in% input$Location
                  & simd != "All"
           )%>%
-          select(year,hos_type,clin_type,geography,simd,value)
+          select(year,hos_type,clin_type,geography,simd,value)%>% 
+          droplevels()
       }
     })
     
@@ -509,11 +520,11 @@ Colour_Scheme<-c('#afeeee','#90cdf5','#1E90FF','#c5e8f7','#84a3b6','#48647a','#0
       
       plot_ly(
         data = activity_summary_new(),
-        #plot- we wont bother at this point with tailored colour
+        #plot
         x = ~  year,
         y = ~  value,
         color = ~  activity_type,
-        colors = ~ Colour_Scheme,
+        colors = c('#006ddb','#920000','#004949'),
         #tooltip
         text = tooltip_summary,
         hoverinfo = "text",
@@ -635,11 +646,17 @@ Colour_Scheme<-c('#afeeee','#90cdf5','#1E90FF','#c5e8f7','#84a3b6','#48647a','#0
       
       plot_ly(
         data = drug_summary_new(),
-        #plot- we wont bother at this point with tailored colour
+        #plot
         x = ~  year,
         y = ~  value,
         color = ~  drug_type,
-        colors = ~ Colour_Scheme,
+        colors = ~ c('#006ddb',
+          '#db6d00',
+          '#920000',
+          '#490092',
+          '#6db6ff',
+          '#004949'
+        ),
         #tooltip
         text = tooltip_summary,
         hoverinfo = "text",
@@ -874,8 +891,6 @@ Colour_Scheme<-c('#afeeee','#90cdf5','#1E90FF','#c5e8f7','#84a3b6','#48647a','#0
                                              'toggleSpikelines',
                                              'hoverCompareCartesian',
                                              'hoverClosestCartesian'),
-               toImageButtonOptions =list(title = 'Download chart image',
-                                          format = "jpeg"),
                displaylogo = F, collaborate = F, editable = F)
       
     })
