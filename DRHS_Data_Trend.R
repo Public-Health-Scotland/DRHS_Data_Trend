@@ -536,7 +536,7 @@ Colour_Scheme<-c('#006ddb',
                  
                  title = paste0(c(
                    rep("&nbsp;", 20),
-                   "EASR per 100,000",
+                   "EASR per 100,000 population",
                    rep("&nbsp;", 20),
                    rep("\n&nbsp;", 3)
                  ),
@@ -669,7 +669,7 @@ Colour_Scheme<-c('#006ddb',
                  
                  title = paste0(c(
                    rep("&nbsp;", 20),
-                   "EASR per 100,000",
+                   "EASR per 100,000 population",
                    rep("&nbsp;", 20),
                    rep("\n&nbsp;", 3)
                  ),
@@ -820,7 +820,7 @@ Colour_Scheme<-c('#006ddb',
                  
                  title = paste0(c(
                    rep("&nbsp;", 20),
-                   "EASR per 100,000",
+                   "EASR per 100,000 population",
                    rep("&nbsp;", 20),
                    rep("\n&nbsp;", 3)
                  ),
