@@ -104,12 +104,7 @@ demographic_summary<- all_data  %>%
             (age_group == "All" & sex == "All" & simd !="All")), 
          measure == "Rate") 
 
-#Separate out the two columns (will do in SPSS later)
-demographic_summary<- demographic_summary %>% 
-  mutate(hos_type = word(demographic_summary$hos_clin_type,sep=" - "))
 
-demographic_summary<- demographic_summary %>% 
-  mutate(clin_type = word(demographic_summary$hos_clin_type,sep=" - ", start = -1))
 
 
 
