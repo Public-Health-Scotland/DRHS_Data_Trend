@@ -853,7 +853,7 @@ Colour_Scheme<-c('#006ddb',
                
                separators = ".",
         annotations = 
-          list(x = 0.96, y = -0.3, 
+          list(x = 0.96, y = -0.29, 
                text = paste0("Source: Drug-Related","<br>",
                              "Hospital Statistics,","<br>",
                              "ISD Scotland (",format(Sys.Date(), "%Y"),")"), 
