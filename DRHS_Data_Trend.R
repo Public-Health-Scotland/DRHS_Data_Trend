@@ -139,7 +139,7 @@ Colour_Scheme<-c('#006ddb',
     
     style = "height: 95%; width: 95%; background-color: #FFFFFF;
     border: 0px solid #FFFFFF;",
-    h1(tags$b("Trend Data")),
+    h1(tags$b("Trend Data"), id= 'Top'),
     p(
       HTML(
         "The charts shown below provide an overview of drug-related general acute
@@ -302,6 +302,8 @@ Colour_Scheme<-c('#006ddb',
         tags$li("Insert summary point here [2]"),
         tags$li("Insert summary point here [3]")
       ),
+      tags$a(href = '#Top',  
+             "Back to top"),
       hr()
       
     ), 
@@ -336,6 +338,8 @@ Colour_Scheme<-c('#006ddb',
         tags$li("Insert summary point here [2]"),
         tags$li("Insert summary point here [3]")
       ),
+      tags$a(href = '#Top',  
+             "Back to top"),
       hr()
       
     ),
@@ -389,7 +393,9 @@ Colour_Scheme<-c('#006ddb',
           tags$li("Insert summary point here [1]"),
           tags$li("Insert summary point here [2]"),
           tags$li("Insert summary point here [3]")
-        )
+        ), 
+        tags$a(href = '#Top',  
+               "Back to top")
       )
     )
     #End of UI part
