@@ -35,7 +35,6 @@ library(RColorBrewer)
 library(stringr)
 
 
-
 ##############################################.
 ############## Data Input ----
 ##############################################.
@@ -145,12 +144,15 @@ Colour_Scheme<-c('#006ddb',
       HTML(
         "The charts shown below provide an overview of drug-related general acute
          and psychiatric hospital stays in Scotland. 
-        "), 
+        "),
       HTML("The charts show the following analyses over time:"),
       tags$ul(
-        tags$li("Activity Type (stay rates, patient rates and new patient rates)"),
-        tags$li("Drug Type"),
-        tags$li("Patient demographics (Age/Sex/Deprivation)")
+        tags$li(tags$a(href= '#activity_link',"Activity Type"),
+                " (stay rates, patient rates and new patient rates)"),
+        tags$li(tags$a(href = '#drugs_link',  
+        "Drug Type")),
+        tags$li(tags$a(href='#demographics_link', "Patient Demographics"),
+                " (Age/Sex/Deprivation)")
       ),
       HTML("Using the drop down boxes, the charts can be modified to show: "),
       tags$ul(
@@ -266,7 +268,7 @@ Colour_Scheme<-c('#006ddb',
     #In the main panel of the summary tab, insert the first plot
     br(),
     br(),
-    h3("Activity Type"), 
+    h3("Activity Type",id = 'activity_link'), 
     br(),
     p("This chart shows drug-related hospital stay rates, patient rates, 
       and new patient rates over time."),
@@ -303,7 +305,7 @@ Colour_Scheme<-c('#006ddb',
       hr()
       
     ), 
-    h3("Drug type"),
+    h3("Drug type", id= 'drugs_link'),
   
     br(),
     p("This chart shows drug-related hospital stay rates, broken down by drug 
@@ -339,7 +341,7 @@ Colour_Scheme<-c('#006ddb',
     ),
     
     p(
-      h3("Demographics"), 
+      h3("Demographics", id= 'demographics_link'), 
       
       br(),
       (
@@ -832,7 +834,7 @@ Colour_Scheme<-c('#006ddb',
                
                separators = ".",
         annotations = 
-          list(x = 1.0, y = -0.25, 
+          list(x = 0.96, y = -0.3, 
                text = paste0("Source: Drug-Related","<br>",
                              "Hospital Statistics,","<br>",
                              "ISD Scotland (",format(Sys.Date(), "%Y"),")"), 
