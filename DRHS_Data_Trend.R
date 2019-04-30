@@ -66,11 +66,13 @@ all_data<-all_data %>%
   mutate(hospital_type= fct_recode(hospital_type, 
                                    "General acute"= "General acute (SMR01)",
                                    "Psychiatric" ="Psychiatric (SMR04)",
-                                   "Combined gen.acute/psych." = "Combined (General acute/Psychiatric)"))
+                                   "Combined gen acute/psych" = "Combined (General acute/Psychiatric)"))
 
 all_data<-all_data %>% 
   mutate(clinical_type= fct_recode(clinical_type, 
-                                   "Combined men.&beh./over." = "Combined (Mental and Behavioural/Overdose)"))
+                                   "Mental and behavioural (M&B)" = "Mental and Behavioural",
+                                   "Overdose (OD)" = "Overdose",
+                                   "Combined M&B/OD" = "Combined (Mental and Behavioural/Overdose)"))
 
          
 activity_summary<-all_data %>% 
@@ -119,12 +121,6 @@ location_types<-list("Scotland" = locations[1],
 demographic_types<-c("Age","Sex", "Deprivation")
 
 
-#For colour 
-#Colour Scheme 1 - currently blue
-#Colour_Scheme<-c('#afeeee','#90cdf5','#1E90FF','#c5e8f7','#84a3b6','#48647a','#0c2a42')
-#Alternative Colour Schemes
-#Colour_Scheme<-c('#2195f2','#0000FF','#4cbeed','#c5e8f7','#84a3b6','#48647a','#0c2a42')
-#Colour_Scheme<-c(brewer.pal(7, "Paired"))
 
 #Colour blind friendly colour scheme
 Colour_Scheme<-c('#006ddb',
@@ -515,14 +511,24 @@ Colour_Scheme<-c('#006ddb',
       ) %>%
         
         #add in title to chart
+       
         
         layout(title =
                  ( paste0(str_to_sentence(paste0("Activity type rates for ",
                                          input$Hospital_Type,
-                        " hospitals as result of ", 
-                        input$Clinical_Type, " in ")), input$Location)),
+                        " hospitals with clinical type ", 
+                        str_sub(input$Clinical_Type,start = 1,end = 1))), 
+                        str_sub(input$Clinical_Type,start = 2), " in ", input$Location)),
                
                separators = ".",
+               annotations = 
+                 list(x = 1.0, y = -0.25, 
+                      text = paste0("Source: Drug-Related","<br>",
+                                    "Hospital Statistics,","<br>",
+                                    "ISD Scotland (",format(Sys.Date(), "%Y"),")"), 
+                      showarrow = F, xref='paper', yref='paper', 
+                      xanchor='left', yanchor='auto', xshift=0, yshift=0,
+                      font=list(family = "arial", size=15, color="#7f7f7f")),
                
                yaxis = list(
                  
@@ -651,11 +657,21 @@ Colour_Scheme<-c('#006ddb',
         layout(title =
                  paste0(str_to_sentence(paste0("Stay rates for ",
                                                input$Hospital_Type,
-                                               " hospitals as result of ", 
-                                               input$Clinical_Type, " in ")), 
+                                               " hospitals with clinical type ", 
+                                               str_sub(input$Clinical_Type,start = 1,end = 1))), 
+                        str_sub(input$Clinical_Type,start = 2), " in ", 
                         input$Location, " by drug type"),
                
                separators = ".",
+               
+               annotations = 
+                 list(x = 1.0, y = -0.25, 
+                      text = paste0("Source: Drug-Related","<br>",
+                                    "Hospital Statistics,","<br>",
+                                    "ISD Scotland (",format(Sys.Date(), "%Y"),")"), 
+                      showarrow = F, xref='paper', yref='paper', 
+                      xanchor='left', yanchor='auto', xshift=0, yshift=0,
+                      font=list(family = "arial", size=15, color="#7f7f7f")),
                
                yaxis = list(
                  
@@ -743,7 +759,7 @@ Colour_Scheme<-c('#006ddb',
       #first the tooltip label
       tooltip_summary <- paste0(
         input$summary_demographic, ": ",
-        demographic_summary_new()[,4],
+        demographic_summary_new()[,5],
         "<br>",
         "Financial year: ",
         demographic_summary_new()$year,
@@ -776,14 +792,18 @@ Colour_Scheme<-c('#006ddb',
         
         #add in title to chart
         
+
+        
         
         layout(title = (
           if (input$summary_demographic == "Deprivation")
           {
             paste0(str_to_sentence(paste0("Patient rates for ",
                                           input$Hospital_Type,
-                                          " hospitals as result of ", 
-                                          input$Clinical_Type, " in ")),
+                                          " hospitals with clinical type ", 
+                                          str_sub(input$Clinical_Type,start = 1,end = 1))),
+                                           str_sub(input$Clinical_Type,start = 2),
+                                          " in ",
                    input$Location, 
                    " by deprivation quintile")
           }
@@ -791,22 +811,34 @@ Colour_Scheme<-c('#006ddb',
           {
             paste0(str_to_sentence(paste0("Patient rates for ",
                                           input$Hospital_Type,
-                                          " hospitals as result of ", 
-                                          input$Clinical_Type, " in ")),
+                                          " hospitals with clinical type ", 
+                                          str_sub(input$Clinical_Type,start = 1,end = 1))),
+                   str_sub(input$Clinical_Type,start = 2),
+                   " in ",
                    input$Location, 
                    " by age group")
           }
           else {
             paste0(str_to_sentence(paste0("Patient rates for ",
                                           input$Hospital_Type,
-                                          " hospitals as result of ", 
-                                          input$Clinical_Type, " in ")),
+                                          " hospitals with clinical type ", 
+                                          str_sub(input$Clinical_Type,start = 1,end = 1))),
+                   str_sub(input$Clinical_Type,start = 2),
+                   " in ",
                    input$Location, 
                    " by sex")
           }
         ),
                
                separators = ".",
+        annotations = 
+          list(x = 1.0, y = -0.25, 
+               text = paste0("Source: Drug-Related","<br>",
+                             "Hospital Statistics,","<br>",
+                             "ISD Scotland (",format(Sys.Date(), "%Y"),")"), 
+               showarrow = F, xref='paper', yref='paper', 
+               xanchor='left', yanchor='auto', xshift=0, yshift=0,
+               font=list(family = "arial", size=15, color="#7f7f7f")),
                
                yaxis = list(
                  
