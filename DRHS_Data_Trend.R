@@ -298,9 +298,17 @@ Colour_Scheme<-c('#006ddb',
       
       br(),
       tags$ul(
-        tags$li("Insert summary point here [1]"),
-        tags$li("Insert summary point here [2]"),
-        tags$li("Insert summary point here [3]")
+        tags$li("The rate of drug-related general acute stays increased 
+                steadily from 51 to 199 stays per 100,000 population between
+                1996/97 and 2017/18."),
+        tags$li("After a lengthy period of stability, the rate of drug-related 
+                psychiatric stays increased from 29 to 40 stays per 100,000 
+                population between 2014/15 and 2016/17, before decreasing slightly 
+                in 2017/18 (38)."),
+        tags$li("In 2017/18, 4,851 patients (90 new patients per 100,000 population) 
+                were treated in hospital (general acute/psychiatric combined) for 
+                drug misuse for the first time. The drug-related new patient rate 
+                has increased since 2006/07 (55 new patients per 100,000 population).")
       ),
       tags$a(href = '#Top',  
              "Back to top"),
@@ -334,9 +342,10 @@ Colour_Scheme<-c('#006ddb',
       
       br(),
       tags$ul(
-        tags$li("Insert summary point here [1]"),
-        tags$li("Insert summary point here [2]"),
-        tags$li("Insert summary point here [3]")
+        tags$li("In 2017/18, 58% of drug-related general acute stays were due 
+                to opioids (drugs similar to heroin)."),
+        tags$li("51% of drug-related psychiatric stays were associated with 
+                ‘multiple/other’ drugs.")
       ),
       tags$a(href = '#Top',  
              "Back to top"),
@@ -390,9 +399,13 @@ Colour_Scheme<-c('#006ddb',
         
         br(),
         tags$ul(
-          tags$li("Insert summary point here [1]"),
-          tags$li("Insert summary point here [2]"),
-          tags$li("Insert summary point here [3]")
+          tags$li("Stays among individuals aged 35 and over increased over the time series. 
+                   For general acute stays among 45-54 year olds, there was a greater
+                  than seventeen-fold increase from 12 to 208 patients per 100,000 
+                  population between 1996/97 and 2017/18."),
+          tags$li("In 2017/18, approximately half of patients with general 
+                  acute or psychiatric stays in relation to drug misuse lived 
+                  in the 20% most deprived areas in Scotland.")
         ), 
         tags$a(href = '#Top',  
                "Back to top")
