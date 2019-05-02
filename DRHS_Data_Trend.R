@@ -311,7 +311,7 @@ Colour_Scheme<-c('#006ddb',
                 has increased since 2006/07 (55 new patients per 100,000 population).")
       ),
       tags$a(href = '#Top',  
-             "Back to top"),
+             icon("circle-arrow-up", lib= "glyphicon"),"Back to top"),
       hr()
       
     ), 
@@ -348,7 +348,7 @@ Colour_Scheme<-c('#006ddb',
                 ‘multiple/other’ drugs.")
       ),
       tags$a(href = '#Top',  
-             "Back to top"),
+             icon("circle-arrow-up", lib= "glyphicon"),"Back to top"),
       hr()
       
     ),
@@ -408,7 +408,7 @@ Colour_Scheme<-c('#006ddb',
                   in the 20% most deprived areas in Scotland.")
         ), 
         tags$a(href = '#Top',  
-               "Back to top")
+               icon("circle-arrow-up", lib= "glyphicon"),"Back to top")
       )
     )
     #End of UI part
@@ -549,7 +549,7 @@ Colour_Scheme<-c('#006ddb',
                                     "ISD Scotland (",format(Sys.Date(), "%Y"),")"), 
                       showarrow = F, xref='paper', yref='paper', 
                       xanchor='left', yanchor='auto', xshift=0, yshift=0,
-                      font=list(family = "arial", size=15, color="#7f7f7f")),
+                      font=list(family = "arial", size=12, color="#7f7f7f")),
                
                yaxis = list(
                  
@@ -692,7 +692,7 @@ Colour_Scheme<-c('#006ddb',
                                     "ISD Scotland (",format(Sys.Date(), "%Y"),")"), 
                       showarrow = F, xref='paper', yref='paper', 
                       xanchor='left', yanchor='auto', xshift=0, yshift=0,
-                      font=list(family = "arial", size=15, color="#7f7f7f")),
+                      font=list(family = "arial", size=12, color="#7f7f7f")),
                
                yaxis = list(
                  
@@ -859,7 +859,7 @@ Colour_Scheme<-c('#006ddb',
                              "ISD Scotland (",format(Sys.Date(), "%Y"),")"), 
                showarrow = F, xref='paper', yref='paper', 
                xanchor='left', yanchor='auto', xshift=0, yshift=0,
-               font=list(family = "arial", size=15, color="#7f7f7f")),
+               font=list(family = "arial", size=12, color="#7f7f7f")),
                
                yaxis = list(
                  
