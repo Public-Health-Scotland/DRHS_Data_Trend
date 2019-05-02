@@ -69,7 +69,7 @@ all_data<-all_data %>%
 
 all_data<-all_data %>% 
   mutate(clinical_type= fct_recode(clinical_type, 
-                                   "Mental and behavioural (M&B)" = "Mental and Behavioural",
+                                   "Mental & behavioural (M&B)" = "Mental and Behavioural",
                                    "Overdose (OD)" = "Overdose",
                                    "Combined M&B/OD" = "Combined (Mental and Behavioural/Overdose)"))
 
