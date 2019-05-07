@@ -531,13 +531,16 @@ demographic_types<-c("Age","Sex", "Deprivation")
         
         #add in title to chart
        
+      
+      
         
         layout(title = list(text=
-                 ( paste0(str_to_sentence(paste0("Activity type rates for ",
-                                         input$Hospital_Type,
-                        " hospitals with clinical type ", 
-                        str_sub(input$Clinical_Type,start = 1,end = 1))), 
-                        str_sub(input$Clinical_Type,start = 2), " in ", input$Location)),
+                              paste0(  input$Hospital_Type,
+                            " hospital rates by activity type (",
+                            input$Location,
+                            "; ",
+                            word(input$Clinical_Type,start = 1,sep = " \\("),
+                            ")"),
                  font = list(size = 15)),
                
                separators = ".",
@@ -674,13 +677,15 @@ demographic_types<-c("Age","Sex", "Deprivation")
         
         #add in title to chart
         
-        layout(title = list(text = 
-                 paste0(str_to_sentence(paste0("Stay rates for ",
-                                               input$Hospital_Type,
-                                               " hospitals with clinical type ", 
-                                               str_sub(input$Clinical_Type,start = 1,end = 1))), 
-                        str_sub(input$Clinical_Type,start = 2), " in ", 
-                        input$Location, " by drug type"),font = list(size = 15)),
+        layout(title = list(
+          text=
+            paste0(  input$Hospital_Type,
+                     " hospital stay rates by drug type (",
+                     input$Location,
+                     "; ",
+                     word(input$Clinical_Type,start = 1,sep = " \\("),
+                     ")"
+        ),font = list(size = 15)),
                
                separators = ".",
                
@@ -842,38 +847,34 @@ demographic_types<-c("Age","Sex", "Deprivation")
 
         
         
+        
+        
         layout(title = list (text= (
           if (input$summary_demographic == "Deprivation")
           {
-            paste0(str_to_sentence(paste0("Patient rates for ",
-                                          input$Hospital_Type,
-                                          " hospitals with clinical type ", 
-                                          str_sub(input$Clinical_Type,start = 1,end = 1))),
-                                           str_sub(input$Clinical_Type,start = 2),
-                                          " in ",
-                   input$Location, 
-                   " by deprivation quintile")
+            paste0(  input$Hospital_Type,
+                     " hospital patient rates by deprivation quintile (",
+                     input$Location,
+                     "; ",
+                     word(input$Clinical_Type,start = 1,sep = " \\("),
+                     ")")
           }
           else if (input$summary_demographic == "Age")
           {
-            paste0(str_to_sentence(paste0("Patient rates for ",
-                                          input$Hospital_Type,
-                                          " hospitals with clinical type ", 
-                                          str_sub(input$Clinical_Type,start = 1,end = 1))),
-                   str_sub(input$Clinical_Type,start = 2),
-                   " in ",
-                   input$Location, 
-                   " by age group")
+            paste0(  input$Hospital_Type,
+                     " hospital patient rates by age group (",
+                     input$Location,
+                     "; ",
+                     word(input$Clinical_Type,start = 1,sep = " \\("),
+                     ")")
           }
           else {
-            paste0(str_to_sentence(paste0("Patient rates for ",
-                                          input$Hospital_Type,
-                                          " hospitals with clinical type ", 
-                                          str_sub(input$Clinical_Type,start = 1,end = 1))),
-                   str_sub(input$Clinical_Type,start = 2),
-                   " in ",
-                   input$Location, 
-                   " by sex")
+            paste0(  input$Hospital_Type,
+                     " hospital patient rates by sex (",
+                     input$Location,
+                     "; ",
+                     word(input$Clinical_Type,start = 1,sep = " \\("),
+                     ")")
           }
         ),font = list(size = 15)),
                
