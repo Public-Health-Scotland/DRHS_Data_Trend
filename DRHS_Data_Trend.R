@@ -31,7 +31,6 @@ library(plotly)
 library(shinyWidgets)
 library(forcats)
 library(DT)
-library(RColorBrewer)
 library(stringr)
 
 
@@ -104,6 +103,8 @@ demographic_summary<- all_data  %>%
             (age_group == "All" & sex != "All" & simd =="All")|
             (age_group == "All" & sex == "All" & simd !="All")), 
          measure == "Rate") 
+demographic_summary <- demographic_summary %>%  
+  mutate(sex= fct_relevel(sex,rev))
 
 
 
@@ -121,14 +122,8 @@ demographic_types<-c("Age","Sex", "Deprivation")
 
 
 
-#Colour blind friendly colour scheme
-Colour_Scheme<-c('#006ddb',
-                 '#db6d00',
-                 '#920000',
-                 '#ffb6db',
-                 '#490092',
-                 '#6db6ff',
-                 '#004949')
+#Colour blind friendly colour scheme - consult documentation
+
 
 #Beginning of script
 {
@@ -298,16 +293,16 @@ Colour_Scheme<-c('#006ddb',
       
       br(),
       tags$ul(
-        tags$li("The rate of drug-related general acute stays increased 
+        tags$li("The rate of drug-related general acute stays within Scotland increased 
                 steadily from 51 to 199 stays per 100,000 population between
                 1996/97 and 2017/18."),
         tags$li("After a lengthy period of stability, the rate of drug-related 
-                psychiatric stays increased from 29 to 40 stays per 100,000 
+                psychiatric stays within Scotland increased from 29 to 40 stays per 100,000 
                 population between 2014/15 and 2016/17, before decreasing slightly 
                 in 2017/18 (38)."),
         tags$li("In 2017/18, 4,851 patients (90 new patients per 100,000 population) 
                 were treated in hospital (general acute/psychiatric combined) for 
-                drug misuse for the first time. The drug-related new patient rate 
+                drug misuse for the first time within Scotland. The drug-related new patient rate 
                 has increased since 2006/07 (55 new patients per 100,000 population).")
       ),
       tags$a(href = '#Top',  
@@ -342,9 +337,9 @@ Colour_Scheme<-c('#006ddb',
       
       br(),
       tags$ul(
-        tags$li("In 2017/18, 58% of drug-related general acute stays were due 
+        tags$li("In 2017/18, 58% of drug-related general acute stays within Scotland were due 
                 to opioids (drugs similar to heroin)."),
-        tags$li("51% of drug-related psychiatric stays were associated with 
+        tags$li("51% of drug-related psychiatric stays within Scotland were associated with 
                 ‘multiple/other’ drugs.")
       ),
       tags$a(href = '#Top',  
@@ -399,10 +394,13 @@ Colour_Scheme<-c('#006ddb',
         
         br(),
         tags$ul(
-          tags$li("Stays among individuals aged 35 and over increased over the time series. 
+          tags$li("Stays within Scotland among individuals aged 35 and over increased over the time series. 
                    For general acute stays among 45-54 year olds, there was a greater
                   than seventeen-fold increase from 12 to 208 patients per 100,000 
                   population between 1996/97 and 2017/18."),
+          tags$li("The patient rates of males were approximately double of more than that
+                  of females throughout the time series for both general acute
+                  and psychiatric stays"),
           tags$li("In 2017/18, approximately half of patients with general 
                   acute or psychiatric stays in relation to drug misuse lived 
                   in the 20% most deprived areas in Scotland.")
@@ -534,12 +532,13 @@ Colour_Scheme<-c('#006ddb',
         #add in title to chart
        
         
-        layout(title =
+        layout(title = list(text=
                  ( paste0(str_to_sentence(paste0("Activity type rates for ",
                                          input$Hospital_Type,
                         " hospitals with clinical type ", 
                         str_sub(input$Clinical_Type,start = 1,end = 1))), 
                         str_sub(input$Clinical_Type,start = 2), " in ", input$Location)),
+                 font = list(size = 15)),
                
                separators = ".",
                annotations = 
@@ -596,7 +595,6 @@ Colour_Scheme<-c('#006ddb',
                
                margin = list(l = 90, r = 60, b = 160, t = 90),
                font = list(size = 13),
-               titlefont = list(size = 15),
                
                #insert legend
                showlegend = TRUE,
@@ -611,7 +609,7 @@ Colour_Scheme<-c('#006ddb',
                                              'toggleSpikelines',
                                              'hoverCompareCartesian',
                                              'hoverClosestCartesian'),
-               displaylogo = F, collaborate = F, editable = F)
+               displaylogo = F,  editable = F)
       
     })
     
@@ -675,13 +673,13 @@ Colour_Scheme<-c('#006ddb',
         
         #add in title to chart
         
-        layout(title =
+        layout(title = list(text = 
                  paste0(str_to_sentence(paste0("Stay rates for ",
                                                input$Hospital_Type,
                                                " hospitals with clinical type ", 
                                                str_sub(input$Clinical_Type,start = 1,end = 1))), 
                         str_sub(input$Clinical_Type,start = 2), " in ", 
-                        input$Location, " by drug type"),
+                        input$Location, " by drug type"),font = list(size = 15)),
                
                separators = ".",
                
@@ -732,14 +730,14 @@ Colour_Scheme<-c('#006ddb',
                                            collapse = ""),
                             showline = TRUE,
                             ticks = "outside"),
+               font = list(size = 13),
                
                #Fix the margins so that the graph and axis titles have enough...
                #room to display nicely.
                #Set the font sizes.
                
                margin = list(l = 90, r = 60, b = 160, t = 90),
-               font = list(size = 13),
-               titlefont = list(size = 15),
+               
                
                #insert legend
                showlegend = TRUE,
@@ -754,7 +752,7 @@ Colour_Scheme<-c('#006ddb',
                                              'toggleSpikelines',
                                              'hoverCompareCartesian',
                                              'hoverClosestCartesian'),
-               displaylogo = F, collaborate = F, editable = F)
+               displaylogo = F,  editable = F)
       
     })
     
@@ -799,7 +797,34 @@ Colour_Scheme<-c('#006ddb',
         x = ~  year,
         y = ~  value,
         color = ~  demographic_summary_new()[,5],
-        colors = ~ Colour_Scheme,
+        colors = 
+          if (input$summary_demographic == "Deprivation")
+          {
+            c("#b66dff",
+              "#db6d00",
+              "#920000",
+              "#006ddb",
+              "#490092"
+              )
+          }
+        else if (input$summary_demographic == "Age")
+        {
+          c("#b66dff",
+            "#db6d00",
+            "#920000",
+            "#006ddb",
+            "#490092",
+            "#6db6ff",
+            "#b6dbff"
+          )
+        }
+        else {
+          c("#920000",
+            "#006ddb")
+        }
+      
+          
+          ,
         #tooltip
         text = tooltip_summary,
         hoverinfo = "text",
@@ -816,7 +841,7 @@ Colour_Scheme<-c('#006ddb',
 
         
         
-        layout(title = (
+        layout(title = list (text= (
           if (input$summary_demographic == "Deprivation")
           {
             paste0(str_to_sentence(paste0("Patient rates for ",
@@ -849,7 +874,7 @@ Colour_Scheme<-c('#006ddb',
                    input$Location, 
                    " by sex")
           }
-        ),
+        ),font = list(size = 15)),
                
                separators = ".",
         annotations = 
@@ -906,7 +931,6 @@ Colour_Scheme<-c('#006ddb',
                #
                margin = list(l = 90, r = 60, b = 160, t = 90),
                font = list(size = 13),
-               titlefont = list(size = 15),
                
                #insert legend
                showlegend = TRUE,
@@ -922,7 +946,7 @@ Colour_Scheme<-c('#006ddb',
                                              'toggleSpikelines',
                                              'hoverCompareCartesian',
                                              'hoverClosestCartesian'),
-               displaylogo = F, collaborate = F, editable = F)
+               displaylogo = F,  editable = F)
       
     })
     
