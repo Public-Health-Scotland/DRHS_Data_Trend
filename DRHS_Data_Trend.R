@@ -398,7 +398,7 @@ demographic_types<-c("Age","Sex", "Deprivation")
                    For general acute stays among 45-54 year olds, there was a greater
                   than seventeen-fold increase from 12 to 208 patients per 100,000 
                   population between 1996/97 and 2017/18."),
-          tags$li("The patient rates of males were approximately double of more than that
+          tags$li("The patient rates of males were approximately double or more than that
                   of females throughout the time series for both general acute
                   and psychiatric stays"),
           tags$li("In 2017/18, approximately half of patients with general 
@@ -653,12 +653,13 @@ demographic_types<-c("Age","Sex", "Deprivation")
         x = ~  year,
         y = ~  value,
         color = ~  drug_type,
-        colors = ~ c('#006ddb',
+        colors = ~ c(
+          '#004949',
           '#db6d00',
+          '#ffb6db',
+          '#006ddb',
           '#920000',
-          '#490092',
-          '#6db6ff',
-          '#004949'
+          '#b66dff' 
         ),
         #tooltip
         text = tooltip_summary,
