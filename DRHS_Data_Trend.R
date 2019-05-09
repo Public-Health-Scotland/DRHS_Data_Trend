@@ -134,74 +134,61 @@ demographic_types<-c("Age","Sex", "Deprivation")
     
     style = "height: 95%; width: 95%; background-color: #FFFFFF;
     border: 0px solid #FFFFFF;",
+    p(
+      h3("RESTRICTED STATISTICS: embargoed to 09:30 28/05/2019", style = "color:red")
+    ),
     h1(tags$b("Trend Data"), id= 'Top'),
     p(
       HTML(
-        "The charts shown below provide an overview of drug-related general acute
-         and psychiatric hospital stays in Scotland. 
+        "The Trend Data page provides an overview of drug-related hospital stays 
+         in Scotland over time, based on the following charts: 
         "),
-      HTML("The charts show the following analyses over time:"),
       tags$ul(
-        tags$li(tags$a(href= '#activity_link',"Activity Type"),
+        tags$li(tags$a(href= '#activity_link',"Activity type"),
                 " (stay rates, patient rates and new patient rates)"),
         tags$li(tags$a(href = '#drugs_link',  
-        "Drug Type")),
+        "Drug type")),
         tags$li(tags$a(href='#demographics_link', "Patient Demographics"),
-                " (Age/Sex/Deprivation)")
+                " (Age/Sex/Deprivation - toggle between these using the blue 
+                buttons above the chart)")
       ),
-      HTML("Using the drop down boxes, the charts can be modified to show: "),
+      HTML("Charts can be modified using the drop down boxes: "),
       tags$ul(
-        tags$li("data from general acute or psychiatric hospitals
-                (or a combination of both);"),
-        tags$li("stays associated with mental and behavioural diagnoses, 
-                accidental poisonings/overdoses (or a combination of both); and,"),
-        tags$li("data from a specific NHS Board or Alcohol and Drug Partnership 
-                (ADP) using the drop down boxes ‘Location Type’ and ‘Location’.")
+        tags$li("Hospital type: general acute or psychiatric hospital data 
+                (or a combination);"),
+        tags$li("Clinical type: mental & behavioural stays, accidental 
+                poisoning/overdose stays (or a combination); and,"),
+        tags$li("Location: data from Scotland, specific NHS Boards or 
+                Alcohol and Drug Partnerships.")
       ),
+      p(HTML(
+        "Click the button below to download the glossary."
+      ),
+     p(
       HTML(
         "For a more detailed breakdown please consult the [insert link to 
         data explorer when available]"
       )
+     ))
     ),
     
-    HTML("To view your data selection in a table, use the 'Show/hide table' button
-         below each chart. Individual trend lines can be hidden by clicking on the
-         labels shown in the chart legend. At the top-right corner of the chart, 
-         you will see a toolbar with four buttons:"),
+    HTML(paste0("Chart functions:"),
+         "<button data-toggle = 'collapse' href = '#text'
+         class = 'btn btn-primary' id = 'text_link'
+         style = 'height:32px;width:28px;
+         background-color: #ffffff;color:#000000;
+         border: 0px solid; #FFFFFF;'>
+         
+         <i class='fas fa-plus'
+         style='font-size:15px;color:black;'></i>
+         
+         </button>"),
+    HTML("<div id = 'text' class = 'collapse'>"),
     br(),
-    br(),
-    tags$ul(
-      tags$li(
-        icon("camera"),
-        tags$b("Download plot as a png"),
-        " - click this button to save the graph as an image
-        (please note that Internet Explorer does not support this
-        function)."
-      ),
-      tags$li(
-        icon("search"),
-        tags$b("Zoom"),
-        " - zoom into the graph by clicking this button and then
-        clicking and dragging your mouse over the area of the
-        graph you are interested in."
-      ),
-      tags$li(
-        icon("move", lib = "glyphicon"),
-        tags$b("Pan"),
-        " - adjust the axes of the graph by clicking this button
-        and then clicking and moving your mouse in any direction
-        you want."
-      ),
-      tags$li(
-        icon("home"),
-        tags$b("Reset axes"),
-        " - click this button to return the axes to their
-        default range."
-      )
-    ),
+    htmlOutput("text_output"),
+    HTML("</div>"),
     
     p(
-      br(),
       tags$b(
         "Note: Statistical disclosure control has been applied to protect
         patient confidentiality. Therefore, the figures presented here
@@ -265,8 +252,6 @@ demographic_types<-c("Age","Sex", "Deprivation")
     br(),
     h3("Activity Type",id = 'activity_link'), 
     br(),
-    p("This chart shows drug-related hospital stay rates, patient rates, 
-      and new patient rates over time."),
     
     mainPanel(
       width = 12,
@@ -313,8 +298,6 @@ demographic_types<-c("Age","Sex", "Deprivation")
     h3("Drug type", id= 'drugs_link'),
   
     br(),
-    p("This chart shows drug-related hospital stay rates, broken down by drug 
-      type, over time. "),
     br(),
     
     #then insert the drugs plot
@@ -349,16 +332,7 @@ demographic_types<-c("Age","Sex", "Deprivation")
     ),
     
     p(
-      h3("Demographics", id= 'demographics_link'), 
-      
-      br(),
-      (
-        "This chart shows drug-related hospital patient rates, broken down by age
-        group, sex and deprivation quintile, over time. You can toggle between
-        the age group, sex and deprivation analyses using the blue buttons 
-        above the chart."  
-      ),
-      br()
+      h3("Demographics", id= 'demographics_link')
     ), 
     
     
@@ -423,7 +397,48 @@ demographic_types<-c("Age","Sex", "Deprivation")
   server  <-  function(input, output)
   {
 
-
+    #Graph information text output
+    output$text_output<-renderUI({ 
+      p(HTML("Show/hide table - show data in a table below the chart."),
+        
+      p(HTML("At the top-right corner of the chart, 
+             you will see a toolbar with four buttons:"),
+        br(),
+        tags$ul(
+          tags$li(
+            icon("camera"),
+            tags$b("Download plot as a png"),
+            " - click this button to save the graph as an image
+            (please note that Internet Explorer does not support this
+            function)."
+          ),
+          tags$li(
+            icon("search"),
+            tags$b("Zoom"),
+            " - zoom into the graph by clicking this button and then
+            clicking and dragging your mouse over the area of the
+            graph you are interested in."
+          ),
+          tags$li(
+            icon("move", lib = "glyphicon"),
+            tags$b("Pan"),
+            " - adjust the axes of the graph by clicking this button
+            and then clicking and moving your mouse in any direction
+            you want."
+          ),
+          tags$li(
+            icon("home"),
+            tags$b("Reset axes"),
+            " - click this button to return the axes to their
+            default range."
+          )
+          ),
+        HTML("Categories can be shown/hidden by clicking on labels
+             in the legend to the right of each chart.")
+          ))
+    })
+    
+    
     #we can then plot the graph based on the user input.
     #First we create a subset  of the data based on user input
     
@@ -843,11 +858,6 @@ demographic_types<-c("Age","Sex", "Deprivation")
       )%>%
         
         #add in title to chart
-        
-
-        
-        
-        
         
         layout(title = list (text= (
           if (input$summary_demographic == "Deprivation")
