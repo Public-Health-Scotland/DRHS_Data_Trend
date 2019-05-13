@@ -138,24 +138,23 @@ demographic_types<-c("Age","Sex", "Deprivation")
       h3("RESTRICTED STATISTICS: embargoed to 09:30 28/05/2019", style = "color:red")
     ),
     h1(tags$b("Trend Data"), id= 'Top'),
+    p(
+      "The Trend Data page provides an overview of drug-related hospital stays 
+         in Scotland over time, based on the following charts: 
+        ",
+      tags$ul(
+        tags$li(tags$a(href= '#activity_link',"Activity type"),
+                " (stay rates, patient rates and new patient rates)"),
+        tags$li(tags$a(href = '#drugs_link',  
+                       "Drug type")),
+        tags$li(tags$a(href='#demographics_link', "Patient Demographics"),
+                " (Age/Sex/Deprivation - choose between these using the blue 
+                buttons above the chart)")
+      )),
 
     
       bs_accordion(id = "drhs_text") %>%
-        bs_set_opts(panel_type = "info") %>%
-        bs_append(title = "Page information", 
-                  content = p(
-                    "The Trend Data page provides an overview of drug-related hospital stays 
-         in Scotland over time, based on the following charts: 
-        ",
-                    tags$ul(
-                      tags$li(tags$a(href= '#activity_link',"Activity type"),
-                              " (stay rates, patient rates and new patient rates)"),
-                      tags$li(tags$a(href = '#drugs_link',  
-                                     "Drug type")),
-                      tags$li(tags$a(href='#demographics_link', "Patient Demographics"),
-                              " (Age/Sex/Deprivation - choose between these using the blue 
-                buttons above the chart)")
-                    )))%>% 
+        bs_set_opts(panel_type = "primary") %>%
         bs_append(title = "Chart information", 
                   content = p("Charts can be modified using the drop down boxes: ",
                   tags$ul(
