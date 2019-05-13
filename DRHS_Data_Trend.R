@@ -56,8 +56,6 @@ all_data<-all_data %>%
 #round the data to nearest two 
 all_data <- all_data %>% mutate(value = round(value, 2))
 
-
-
 #We will manually change the names of factors in R until we have an agreed 
 #terminology for the hospital and clinical types. 
 
@@ -560,7 +558,8 @@ demographic_types<-c("Age","Sex", "Deprivation")
         activity_summary_new()$year,
         "<br>",
         "Rate: ",
-        activity_summary_new()$value
+        formatC(activity_summary_new()$value, big.mark = ",",digits = 2,format = 'f')
+        
       )
       
       #Create the main body of the chart.
@@ -684,7 +683,8 @@ demographic_types<-c("Age","Sex", "Deprivation")
                 options = list(searching= FALSE,
                                lengthChange= FALSE)
                 
-      )
+      )%>% 
+        formatRound(columns = 6,digits = 2)
     })
     
     # Substances Plot
@@ -699,7 +699,9 @@ demographic_types<-c("Age","Sex", "Deprivation")
         drug_summary_new()$year,
         "<br>",
         "Rate: ",
-        drug_summary_new()$value
+        formatC(drug_summary_new()$value, big.mark = ",",
+                digits = 2,format = 'f')
+        
       )
       
       #Create the main body of the chart.
@@ -828,7 +830,8 @@ demographic_types<-c("Age","Sex", "Deprivation")
                 style = "Bootstrap", 
                 options = list(searching= FALSE,
                                lengthChange= FALSE)
-      )
+      ) %>% 
+        formatRound(columns = 6,digits = 2)
     })
     
     
@@ -843,10 +846,10 @@ demographic_types<-c("Age","Sex", "Deprivation")
         "Financial year: ",
         demographic_summary_new()$year,
         "<br>",
-        
-        
         "Rate: ",
-        demographic_summary_new()$value
+        formatC(demographic_summary_new()$value, big.mark = ",",
+                digits = 2,format = 'f')
+        
       )
       
       #Create the main body of the chart.
@@ -1015,7 +1018,8 @@ demographic_types<-c("Age","Sex", "Deprivation")
                 style = "Bootstrap", 
                 options = list(searching= FALSE,
                                lengthChange= FALSE)
-      )
+      )%>% 
+        formatRound(columns = 6,digits = 2)
       
        
     })
