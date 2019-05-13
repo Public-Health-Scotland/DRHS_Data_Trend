@@ -32,7 +32,8 @@ library(shinyWidgets)
 library(forcats)
 library(DT)
 library(stringr)
-
+library(shinyBS)
+library(bsplus)
 
 ##############################################.
 ############## Data Input ----
@@ -46,7 +47,7 @@ library(stringr)
 filepath<- "\\\\nssstats01\\SubstanceMisuse1\\Topics\\DrugRelatedHospitalStats\\Publications\\DRHS\\20181218\\Temp\\"
 
 #Data to be used for explorer and trend pages
-all_data<- readRDS(paste0(filepath,"s06-temp09_num_rate_perc_R-SHINY_rounded.rds"))
+all_data<- readRDS(paste0(filepath,"s06-temp09_num_rate_perc_R-SHINY_rounded.RDS"))
 #need to rename the final column as value
 all_data<-all_data %>% 
   rename("value" = value_Round)
@@ -112,14 +113,15 @@ demographic_summary <- demographic_summary %>%
 
 #we will also set user input options
 hospital_types <- as.character(unique(activity_summary$hospital_type))
+hospital_types<-c(hospital_types[3],hospital_types[1],hospital_types[2])
 clinical_types <- as.character(unique(activity_summary$clinical_type))
+clinical_types<-c(clinical_types[3],clinical_types[1],clinical_types[2])
 locations <- as.character(unique(activity_summary$geography))
 location_types<-list("Scotland" = locations[1],
                      "NHS Board of residence" = locations[2:15],
                      "ADP of residence" = locations[16:46])
 
 demographic_types<-c("Age","Sex", "Deprivation")
-
 
 
 #Colour blind friendly colour scheme - consult documentation
@@ -138,55 +140,86 @@ demographic_types<-c("Age","Sex", "Deprivation")
       h3("RESTRICTED STATISTICS: embargoed to 09:30 28/05/2019", style = "color:red")
     ),
     h1(tags$b("Trend Data"), id= 'Top'),
-    p(
-      HTML(
-        "The Trend Data page provides an overview of drug-related hospital stays 
+
+    
+      bs_accordion(id = "drhs_text") %>%
+        bs_set_opts(panel_type = "info") %>%
+        bs_append(title = "Page information", 
+                  content = p(
+                    "The Trend Data page provides an overview of drug-related hospital stays 
          in Scotland over time, based on the following charts: 
-        "),
-      tags$ul(
-        tags$li(tags$a(href= '#activity_link',"Activity type"),
-                " (stay rates, patient rates and new patient rates)"),
-        tags$li(tags$a(href = '#drugs_link',  
-        "Drug type")),
-        tags$li(tags$a(href='#demographics_link', "Patient Demographics"),
-                " (Age/Sex/Deprivation - toggle between these using the blue 
+        ",
+                    tags$ul(
+                      tags$li(tags$a(href= '#activity_link',"Activity type"),
+                              " (stay rates, patient rates and new patient rates)"),
+                      tags$li(tags$a(href = '#drugs_link',  
+                                     "Drug type")),
+                      tags$li(tags$a(href='#demographics_link', "Patient Demographics"),
+                              " (Age/Sex/Deprivation - choose between these using the blue 
                 buttons above the chart)")
-      ),
-      HTML("Charts can be modified using the drop down boxes: "),
-      tags$ul(
-        tags$li("Hospital type: general acute or psychiatric hospital data 
+                    )))%>% 
+        bs_append(title = "Chart information", 
+                  content = p("Charts can be modified using the drop down boxes: ",
+                  tags$ul(
+                    tags$li("Hospital type: general acute or psychiatric hospital data 
                 (or a combination);"),
-        tags$li("Clinical type: mental & behavioural stays, accidental 
+                    tags$li("Clinical type: mental & behavioural stays, accidental 
                 poisoning/overdose stays (or a combination); and,"),
-        tags$li("Location: data from Scotland, specific NHS Boards or 
+                    tags$li("Location: data from Scotland, specific NHS Boards or 
                 Alcohol and Drug Partnerships.")
-      ),
-      p(HTML(
-        "Click the button below to download the glossary."
-      ),
+                  )))%>% 
+        bs_append(title = "Chart functions",
+                  content = p(
+                    tags$ul(
+                    tags$li(
+                      icon("camera"),
+                      tags$b("Download plot as a png"),
+                      " - click this button to save the graph as an image
+                      (please note that Internet Explorer does not support this
+                      function)."
+                    ),
+                    tags$li(
+                      icon("search"),
+                      tags$b("Zoom"),
+                      " - zoom into the graph by clicking this button and then
+                      clicking and dragging your mouse over the area of the
+                      graph you are interested in."
+                    ),
+                    tags$li(
+                      icon("move", lib = "glyphicon"),
+                      tags$b("Pan"),
+                      " - adjust the axes of the graph by clicking this button
+                      and then clicking and moving your mouse in any direction
+                      you want."
+                    ),
+                    tags$li(
+                      icon("home"),
+                      tags$b("Reset axes"),
+                      " - click this button to return the axes to their
+                      default range."
+                    )
+                    ), 
+                  "Categories can be shown/hidden by clicking on labels 
+                  in the legend to the right of each chart.")),
+      
      p(
-      HTML(
-        "For a more detailed breakdown please consult the [insert link to 
-        data explorer when available]"
+      
+        "For a more detailed breakdown please consult the ",
+        tags$b(
+          tags$a(href = "https://scotland.shinyapps.io/nhs-drhs-data-explorer/",
+                 "Data explorer.")
+        )
+      ) ,
+    p(
+      "If you experience any problems using this dashboard or have further
+      questions relating to the data, please contact us at:",
+      tags$b(
+        tags$a(href = "mailto:NSS.isdsubstancemisuse@nhs.net",
+               "NSS.isdsubstancemisuse@nhs.net.")
       )
-     ))
     ),
     
-    HTML(paste0("Chart functions:"),
-         "<button data-toggle = 'collapse' href = '#text'
-         class = 'btn btn-primary' id = 'text_link'
-         style = 'height:32px;width:28px;
-         background-color: #ffffff;color:#000000;
-         border: 0px solid; #FFFFFF;'>
-         
-         <i class='fas fa-plus'
-         style='font-size:15px;color:black;'></i>
-         
-         </button>"),
-    HTML("<div id = 'text' class = 'collapse'>"),
-    br(),
-    htmlOutput("text_output"),
-    HTML("</div>"),
+
     
     p(
       tags$b(
@@ -205,6 +238,7 @@ demographic_types<-c("Age","Sex", "Deprivation")
     ),
 
     p(""),
+
     
     wellPanel(
       tags$style(
@@ -220,7 +254,7 @@ demographic_types<-c("Age","Sex", "Deprivation")
         4,
         shinyWidgets::pickerInput(
           inputId = "Hospital_Type",
-          label = "Select hospital type",
+          label = "Hospital type",
           choices = hospital_types
         )
       ),
@@ -229,7 +263,7 @@ demographic_types<-c("Age","Sex", "Deprivation")
         4,
         shinyWidgets::pickerInput(
           inputId = "Clinical_Type",
-          label = "Select clinical type",
+          label = "Clinical type",
           choices = clinical_types
         )
       ),
@@ -237,7 +271,7 @@ demographic_types<-c("Age","Sex", "Deprivation")
         4,
         shinyWidgets::pickerInput(
           inputId = "Location",
-          label = "Select location",
+          label = "Location",
           choices = location_types,
           options = list(size=5, 
                          `live-search`=TRUE)
@@ -277,6 +311,7 @@ demographic_types<-c("Age","Sex", "Deprivation")
     p(
       
       br(),
+      p("Main points (Scotland)",
       tags$ul(
         tags$li("The rate of drug-related general acute stays within Scotland increased 
                 steadily from 51 to 199 stays per 100,000 population between
@@ -289,7 +324,7 @@ demographic_types<-c("Age","Sex", "Deprivation")
                 were treated in hospital (general acute/psychiatric combined) for 
                 drug misuse for the first time within Scotland. The drug-related new patient rate 
                 has increased since 2006/07 (55 new patients per 100,000 population).")
-      ),
+      )),
       tags$a(href = '#Top',  
              icon("circle-arrow-up", lib= "glyphicon"),"Back to top"),
       hr()
@@ -319,12 +354,15 @@ demographic_types<-c("Age","Sex", "Deprivation")
     p(
       
       br(),
+      p("Main points (Scotland)",
       tags$ul(
-        tags$li("In 2017/18, 58% of drug-related general acute stays within Scotland were due 
+        tags$li("In 2017/18, 58% of drug-related general acute stays within
+                 Scotland were due 
                 to opioids (drugs similar to heroin)."),
-        tags$li("51% of drug-related psychiatric stays within Scotland were associated with 
+        tags$li("51% of drug-related psychiatric stays within Scotland were
+                 associated with 
                 ‘multiple/other’ drugs.")
-      ),
+      )),
       tags$a(href = '#Top',  
              icon("circle-arrow-up", lib= "glyphicon"),"Back to top"),
       hr()
@@ -363,25 +401,26 @@ demographic_types<-c("Age","Sex", "Deprivation")
       dataTableOutput("demographic_table"),
       HTML("</div>"),
       br(),
-      br(), 
       p(
         
         br(),
+        p("Main points (Scotland)",
         tags$ul(
-          tags$li("Stays within Scotland among individuals aged 35 and over increased over the time series. 
-                   For general acute stays among 45-54 year olds, there was a greater
-                  than seventeen-fold increase from 12 to 208 patients per 100,000 
-                  population between 1996/97 and 2017/18."),
-          tags$li("The patient rates of males were approximately double or more than that
-                  of females throughout the time series for both general acute
-                  and psychiatric stays"),
+          tags$li("Drug-related hospital stays among individuals aged 35 and over
+                  increased over the time series. For general acute stays among 
+                  45-54 year olds, there was a greater than seventeen-fold increase 
+                  from 12 to 208 patients per 100,000 population between 1996/97 
+                  and 2017/18."),
+          tags$li("Between 1996/97 and 2017/18, drug-related patient rates 
+                  for males were approximately twice as high as 
+                  female patient rates."),
           tags$li("In 2017/18, approximately half of patients with general 
                   acute or psychiatric stays in relation to drug misuse lived 
                   in the 20% most deprived areas in Scotland.")
         ), 
         tags$a(href = '#Top',  
                icon("circle-arrow-up", lib= "glyphicon"),"Back to top")
-      )
+      ))
     )
     #End of UI part
     
