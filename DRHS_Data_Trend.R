@@ -164,7 +164,8 @@ demographic_types<-c("Age","Sex", "Deprivation")
                 poisoning/overdose stays (or a combination); and,"),
                     tags$li("Location: data from Scotland, specific NHS Boards or 
                 Alcohol and Drug Partnerships.")
-                  )))%>% 
+                  ), 
+                  "Show/hide table - shows data in a table below the chart."))%>% 
         bs_append(title = "Chart functions",
                   content = p(
                     tags$ul(
@@ -201,7 +202,7 @@ demographic_types<-c("Age","Sex", "Deprivation")
       
      p(
       
-        "For a more detailed breakdown please consult the ",
+        "A more detailed breakdown of these data is available in the ",
         tags$b(
           tags$a(href = "https://scotland.shinyapps.io/nhs-drhs-data-explorer/",
                  "Data explorer.")
@@ -281,7 +282,7 @@ demographic_types<-c("Age","Sex", "Deprivation")
     #In the main panel of the summary tab, insert the first plot
     br(),
     br(),
-    h3("Activity Type",id = 'activity_link'), 
+    h3("Activity type",id = 'activity_link'), 
     br(),
     
     mainPanel(
