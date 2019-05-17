@@ -14,75 +14,115 @@
 #There will be three charts in total in the data trend page
 # - 1) Rates of Activity Measure (Stays/Patients/New Patients)
 # - 2) Rates of Stays broken down by substance categories
-# - 3) Rates of Patients broken down by Demographic measure (Age/Sex/SIMD). 
+# - 3) Rates of Patients broken down by Demographic measure (Age/Sex/Deprivation). 
 
-#So first input will be a slightly simplified table and will only inlcude 
-#enough data to test that user inputs are working correctly. 
-# - There will be intitially three options to choose from 
+
+#There will be intitially three options to choose from 
 # - 1) Hospital/Clinical Type
 # - 2) Geography Type
 # = 3) Geography
 
 #A fourth option will be used to 'toggle' between Age, Sex and SIMD for the 
-#demographic charts. It is presented here as a drop down menu at present
-#to simply determine that the reactive elements are working correctly. 
+#demographic charts. 
 
 library(shiny)
 library(dplyr)
 library(plotly)
 library(shinyWidgets)
 library(forcats)
+library(DT)
+library(stringr)
+library(shinyBS)
+library(bsplus)
 
 ##############################################.
 ############## Data Input ----
 ##############################################.
 
 
-#The data that is being read in here is a simplified version of the real 
-#data that would be used. In practice the data that is generated for the data trend 
-#page would be utilised for this page. 
+#The current data is stored on the stats server in the SubstanceMisuse1 directory 
+#Current approach to reading in data is to take the SPSS output and then cut it down to 
+#size and then save as csv files for use. 
 
-#The first input would be the data explorer "time trend" files that could 
-#be used to generate the following tables
-# 1) The file filtered to only include 'all drugs' in the substances category
-activity_summary <- read.csv("Time_trend_skeleton.csv")
-activity_summary<- activity_summary%>%
-  filter(Substance=="All", 
-         Measure== "Rates")
+filepath<- "\\\\nssstats01\\SubstanceMisuse1\\Topics\\DrugRelatedHospitalStats\\Publications\\DRHS\\20181218\\Temp\\"
 
-# 2) The file filtered to only inlcude 'stays' in the activity measure column
-drug_summary <- read.csv("Time_trend_skeleton.csv")
-#choose only the 6 main categories (not sub categories)
-Substances<- c("Opiods", "Cannabinoids", "Sedatives/Hypnotics",
-               "Cocaine","Other Stimulants","Multiple/Other")
+#Data to be used for explorer and trend pages
+all_data<- readRDS(paste0(filepath,"s06-temp09_num_rate_perc_R-SHINY_rounded.RDS"))
+#need to rename the final column as value
+all_data<-all_data %>% 
+  rename("value" = value_Round)
 
-drug_summary<-drug_summary%>%
-  filter(Activity=="Stays", 
-         Measure== "Rates",
-         Substance %in% Substances)
 
-#The following demographic tables would be read in from two files 
-#one for the age/sex file and one for the SIMD file 
-#Note- SIMD changed to factor. 
+#round the data to nearest two 
+all_data <- all_data %>% mutate(value = round(value, 2))
 
-demographic_summary<-read.csv("Age_Sex_Data_Trend_Skeleton.csv")
-demographic_summary<- demographic_summary%>%
-  mutate(Age = fct_relevel(Age, "Under 15"))%>%
-  mutate(Age = fct_relevel(Age, "Over 64", after = 6))
+#We will manually change the names of factors in R until we have an agreed 
+#terminology for the hospital and clinical types. 
 
-str(demographic_summary$Age)
-SIMD_summary<-read.csv("SIMD_Data_Trend_Skeleton.csv")
-SIMD_summary$SIMD<-as.factor(SIMD_summary$SIMD)
+all_data<-all_data %>% 
+  mutate(hospital_type= fct_recode(hospital_type, 
+                                   "General acute"= "General acute (SMR01)",
+                                   "Psychiatric" ="Psychiatric (SMR04)",
+                                   "Combined gen acute/psych" = "Combined (General acute/Psychiatric)"))
+
+all_data<-all_data %>% 
+  mutate(clinical_type= fct_recode(clinical_type, 
+                                   "Mental & behavioural (M&B)" = "Mental and Behavioural",
+                                   "Overdose (OD)" = "Overdose",
+                                   "Combined M&B/OD" = "Combined (Mental and Behavioural/Overdose)"))
+
+         
+activity_summary<-all_data %>% 
+  filter(drug_type == "All", 
+         age_group == "All",
+         sex == "All",
+         simd == "All", 
+         measure == "Rate")
+
+activity_summary<-activity_summary %>% 
+  mutate(activity_type= fct_relevel(activity_type,rev))
+
+#filter by drug type
+drug_types<- as.character(unique(all_data$drug_type)[2:7])
+
+drug_summary<- all_data %>% 
+  filter(activity_type == "Stays",
+         drug_type %in% drug_types,
+         age_group == "All",
+         sex == "All",
+         simd == "All", 
+         measure == "Rate") %>% 
+  droplevels()
+
+#filter by demography
+demographic_summary<- all_data  %>% 
+  filter(drug_type == "All",
+         activity_type =="Patients",
+         ((age_group != "All" & sex == "All" & simd =="All")|
+            (age_group == "All" & sex != "All" & simd =="All")|
+            (age_group == "All" & sex == "All" & simd !="All")), 
+         measure == "Rate") 
+demographic_summary <- demographic_summary %>%  
+  mutate(sex= fct_relevel(sex,rev))
+
+
+
 
 
 #we will also set user input options
-clinical_types <- as.character(unique(activity_summary$Hospital.Clinical.Type))
-location_types <- c("Scotland", "Health Board", "ADP")
-location <- factor(activity_summary$Geography)%>%
-  fct_relevel("Scotland")
-str(location)
-#location <- as.character(unique(activity_summary$Geography))
-demographic_types<-c("Age","Sex", "SIMD")
+hospital_types <- as.character(unique(activity_summary$hospital_type))
+hospital_types<-c(hospital_types[3],hospital_types[1],hospital_types[2])
+clinical_types <- as.character(unique(activity_summary$clinical_type))
+clinical_types<-c(clinical_types[3],clinical_types[1],clinical_types[2])
+locations <- as.character(unique(activity_summary$geography))
+location_types<-list("Scotland" = locations[1],
+                     "NHS Board of residence" = locations[2:15],
+                     "ADP of residence" = locations[16:46])
+
+demographic_types<-c("Age","Sex", "Deprivation")
+
+
+#Colour blind friendly colour scheme - consult documentation
 
 
 #Beginning of script
@@ -91,94 +131,112 @@ demographic_types<-c("Age","Sex", "SIMD")
   ############## User Interface ----
   ##############################################.
   ui <- fluidPage(
-    style = "width: 100%; height: 100%; max-width: 1200px;",
-    tags$head(
-      tags$style(
-        type = "text/css",
-        ".shiny-output-error { visibility: hidden; }",
-        ".shiny-output-error:before { visibility: hidden; }"
-      ),
-      
-      #The following chunk of code does three things:
-      # 1. Paints the ribbon that contains the tab headers white.
-      # 2. Highlights the header of the active tab in blue.
-      # 3. Sets the font size for the sentence that appears above the...
-      # cross-boundary flow diagram.
-      
-      tags$style(
-        HTML(
-          ".tabbable > .nav > li > a {
-          color: #000000;
-}
-
-.tabbable > .nav > li[class = active] > a {
-background-color: #0072B2;
-color: #FFFFFF;
-}
-
-#flow_text {
-font-size: 15px;
-}")
-)
-        ),
-
+    
     style = "height: 95%; width: 95%; background-color: #FFFFFF;
     border: 0px solid #FFFFFF;",
-    h1(tags$b("Data Trends In Scotland")),
     p(
-      HTML(
-        "This is a one page tab that covers data at a high level overview
-         of Scotland. The text wording can be agreed at a later date. "), 
-        br(),
-        br(),
-        "It could include stuff like - ",
+      h3("RESTRICTED STATISTICS: embargoed to 09:30 28/05/2019", style = "color:red")
+    ),
+    h1(tags$b("Trend Data"), id= 'Top'),
+    p(
+      "The Trend Data page provides an overview of drug-related hospital stays 
+         in Scotland over time, based on the following charts: 
+        ",
       tags$ul(
-      tags$li("Information about what this page shows"),
-      tags$li("Information about what this page ", tags$i("doesn't"), " show"),
-      tags$li("A link to the data explorer")
+        tags$li(tags$a(href= '#activity_link',"Activity type"),
+                " (stay rates, patient rates and new patient rates)"),
+        tags$li(tags$a(href = '#drugs_link',  
+                       "Drug type")),
+        tags$li(tags$a(href='#demographics_link', "Patient Demographics"),
+                " (Age/Sex/Deprivation - choose between these using the blue 
+                buttons above the chart)")
       )),
+
     
-    tags$ul(
-      tags$li(
-        tags$b("Download plot as a png"),
-        icon("camera"),
-        " - click this button to save the graph as an image
-        (please note that Internet Explorer does not support this
-        function)."
-      ),
-      tags$li(
-        tags$b("Zoom"),
-        icon("search"),
-        " - zoom into the graph by clicking this button and then
-        clicking and dragging your mouse over the area of the
-        graph you are interested in."
-      ),
-      tags$li(
-        tags$b("Pan"),
-        icon("move", lib = "glyphicon"),
-        " - adjust the axes of the graph by clicking this button
-        and then clicking and moving your mouse in any direction
-        you want."
-      ),
-      tags$li(
-        tags$b("Reset axes"),
-        icon("home"),
-        " - click this button to return the axes to their
-        default range."
+      bs_accordion(id = "drhs_text") %>%
+        bs_set_opts(panel_type = "primary") %>%
+        bs_append(title = "Chart information", 
+                  content = p("Charts can be modified using the drop down boxes: ",
+                  tags$ul(
+                    tags$li("Hospital type: general acute or psychiatric hospital data 
+                (or a combination);"),
+                    tags$li("Clinical type: mental & behavioural stays, accidental 
+                poisoning/overdose stays (or a combination); and,"),
+                    tags$li("Location: data from Scotland, specific NHS Boards or 
+                Alcohol and Drug Partnerships.")
+                  ), 
+                  "Show/hide table - shows data in a table below the chart."))%>% 
+        bs_append(title = "Chart functions",
+                  content = p(
+                    tags$ul(
+                    tags$li(
+                      icon("camera"),
+                      tags$b("Download plot as a png"),
+                      " - click this button to save the graph as an image
+                      (please note that Internet Explorer does not support this
+                      function)."
+                    ),
+                    tags$li(
+                      icon("search"),
+                      tags$b("Zoom"),
+                      " - zoom into the graph by clicking this button and then
+                      clicking and dragging your mouse over the area of the
+                      graph you are interested in."
+                    ),
+                    tags$li(
+                      icon("move", lib = "glyphicon"),
+                      tags$b("Pan"),
+                      " - adjust the axes of the graph by clicking this button
+                      and then clicking and moving your mouse in any direction
+                      you want."
+                    ),
+                    tags$li(
+                      icon("home"),
+                      tags$b("Reset axes"),
+                      " - click this button to return the axes to their
+                      default range."
+                    )
+                    ), 
+                  "Categories can be shown/hidden by clicking on labels 
+                  in the legend to the right of each chart.")),
+      
+     p(
+      
+        "A more detailed breakdown of these data is available in the ",
+        tags$b(
+          tags$a(href = "https://scotland.shinyapps.io/nhs-drhs-data-explorer/",
+                 "Data explorer.")
+        )
+      ) ,
+    p(
+      "If you experience any problems using this dashboard or have further
+      questions relating to the data, please contact us at:",
+      tags$b(
+        tags$a(href = "mailto:NSS.isdsubstancemisuse@nhs.net",
+               "NSS.isdsubstancemisuse@nhs.net.")
       )
-      ),
+    ),
+    
+
     
     p(
-      br(),
       tags$b(
         "Note: Statistical disclosure control has been applied to protect
         patient confidentiality. Therefore, the figures presented here
         may not be additive and may differ to previous
         sources of information."
       )
-      ),
-    
+    ),
+    downloadButton(outputId = "download_glossary", 
+                   label = "Download glossary", 
+                   class = "glossary"),
+    tags$head(
+      tags$style(".glossary { background-color: #0072B2; } 
+                          .glossary { color: #FFFFFF; }")
+    ),
+
     p(""),
+
     
     wellPanel(
       tags$style(
@@ -193,161 +251,254 @@ font-size: 15px;
       column(
         4,
         shinyWidgets::pickerInput(
-          inputId = "Hospital_Clinic_Type",
-          label = "Select clinical type",
-          choices = clinical_types,
-          selected = "Combined- Combined "
+          inputId = "Hospital_Type",
+          label = "Hospital type",
+          choices = hospital_types
         )
       ),
-     
+      
       column(
         4,
-        uiOutput("location_types")
-        ),
+        shinyWidgets::pickerInput(
+          inputId = "Clinical_Type",
+          label = "Clinical type",
+          choices = clinical_types
+        )
+      ),
       column(
         4,
-        uiOutput("locations")
+        shinyWidgets::pickerInput(
+          inputId = "Location",
+          label = "Location",
+          choices = location_types,
+          options = list(size=5, 
+                         `live-search`=TRUE)
+        )
       )
     ),
-
-
+   
+    
+    
     #In the main panel of the summary tab, insert the first plot
-
-    h3("Activity Measure"), 
-br(),
-p("Insert text here explaing what this shows. My preference would be to include only
-  text that is either above or below the graph (not a bit above and a bit 
-  underneath as in data trend page). I think that this makes everything a little 
-  bit clearer"),
-
+    br(),
+    br(),
+    h3("Activity type",id = 'activity_link'), 
+    br(),
+    
     mainPanel(
       width = 12,
       plotlyOutput("activity_summary_plot",
                    width = "1090px",
-                   height = "600px")
-),
-
-tags$head(
-  tags$style(HTML("hr {border-top: 1px solid #000000;}"))
-),
-
+                   height = "600px"),
+      HTML("<button data-toggle = 'collapse' href = '#activitysummary'
+                   class = 'btn btn-primary' id = 'activitysummary_link'> 
+                   <strong> Show/hide table </strong></button>"),
+      HTML("<div id = 'activitysummary' class = 'collapse'>"),
+      br(),
+      dataTableOutput("activity_summary_table"),
+      HTML("</div>"),
+      br(),
+      br()
+    ),
+    
+    
+    tags$head(
+      tags$style(HTML("hr {border: 1px solid #000000;}"))
+    ),
+    
     p(
-      br(),
-      (
-        "We can then put some more text underneath the plot. We sill need to format 
-        it neatly (with headers and the likes)"
-      ),
-      br(),
       
-      hr(),
-      (
-        "It would also be useful to maybe have lines between the graphs to make the 
-        separation between them clear, but so far I can only figure out how to generate
-        it when there is some text above!"
-      )
+      br(),
+      p("Main points (Scotland)",
+      tags$ul(
+        tags$li("The rate of drug-related general acute stays within Scotland increased 
+                steadily from 51 to 199 stays per 100,000 population between
+                1996/97 and 2017/18."),
+        tags$li("After a lengthy period of stability, the rate of drug-related 
+                psychiatric stays within Scotland increased from 29 to 40 stays per 100,000 
+                population between 2014/15 and 2016/17, before decreasing slightly 
+                in 2017/18 (38)."),
+        tags$li("In 2017/18, 4,851 patients (90 new patients per 100,000 population) 
+                were treated in hospital (general acute/psychiatric combined) for 
+                drug misuse for the first time within Scotland. The drug-related new patient rate 
+                has increased since 2006/07 (55 new patients per 100,000 population).")
+      )),
+      tags$a(href = '#Top',  
+             icon("circle-arrow-up", lib= "glyphicon"),"Back to top"),
+      hr()
       
     ), 
-h3("Substances"),
-
+    h3("Drug type", id= 'drugs_link'),
+  
+    br(),
+    br(),
+    
     #then insert the drugs plot
     mainPanel(
       width = 12,
       plotlyOutput("drugs_plot",
                    width = "1090px",
-                   height = "600px")
+                   height = "600px"),
+      HTML("<button data-toggle = 'collapse' href = '#drugs'
+                   class = 'btn btn-primary' id = 'drugs_link'> 
+                   <strong> Show/hide table </strong></button>"),
+      HTML("<div id = 'drugs' class = 'collapse'>"),
+      br(),
+      dataTableOutput("drugs_table"),
+      HTML("</div>"),
+      br(),
+      br()
+    ),
+    p(
+      
+      br(),
+      p("Main points (Scotland)",
+      tags$ul(
+        tags$li("In 2017/18, 58% of drug-related general acute stays within
+                 Scotland were due 
+                to opioids (drugs similar to heroin)."),
+        tags$li("51% of drug-related psychiatric stays within Scotland were
+                 associated with 
+                ‘multiple/other’ drugs.")
+      )),
+      tags$a(href = '#Top',  
+             icon("circle-arrow-up", lib= "glyphicon"),"Back to top"),
+      hr()
+      
     ),
     
     p(
-      h3("Demographics"), 
-      br(),
-      (
-        "We can then put some more text underneath this plot. We now add a drop down menu
-        for the demographic stuff. This would look better as a button type thing rather 
-        than a drop down menu, but this will suffice for now"  
-    ),
-    br()
+      h3("Demographics", id= 'demographics_link')
     ), 
     
-
+    
     #Insert demographic options 
     #This part to be converted into toggle button
     column(
-      width = 6,
+      width = 5,
       shinyWidgets::radioGroupButtons(
         inputId = "summary_demographic",
-        label = "Select demographic",
+        label = "Show: ",
         choices = demographic_types,
+        status = "primary",justified = TRUE,
+        checkIcon = list(yes = icon("ok", lib = "glyphicon")),
         selected = "Age"
-      ),
-      #then final demographic plot
-      mainPanel(
-        width = 12,
-        plotlyOutput("demographic_plot",
-                     width = "1090px",
-                     height = "600px")
       )
-      )
+    ),
+    #then final demographic plot
+    mainPanel(
+      width = 12,
+      plotlyOutput("demographic_plot",
+                   width = "1090px",
+                   height = "600px"),
+      HTML("<button data-toggle = 'collapse' href = '#demographic'
+                   class = 'btn btn-primary' id = 'demographic_link'> 
+                   <strong> Show/hide table </strong></button>"),
+      HTML("<div id = 'demographic' class = 'collapse'>"),
+      br(),
+      dataTableOutput("demographic_table"),
+      HTML("</div>"),
+      br(),
+      p(
+        
+        br(),
+        p("Main points (Scotland)",
+        tags$ul(
+          tags$li("Drug-related hospital stays among individuals aged 35 and over
+                  increased over the time series. For general acute stays among 
+                  45-54 year olds, there was a greater than seventeen-fold increase 
+                  from 12 to 208 patients per 100,000 population between 1996/97 
+                  and 2017/18."),
+          tags$li("Between 1996/97 and 2017/18, drug-related patient rates 
+                  for males were approximately twice as high as 
+                  female patient rates."),
+          tags$li("In 2017/18, approximately half of patients with general 
+                  acute or psychiatric stays in relation to drug misuse lived 
+                  in the 20% most deprived areas in Scotland.")
+        ), 
+        tags$a(href = '#Top',  
+               icon("circle-arrow-up", lib= "glyphicon"),"Back to top")
+      ))
+    )
+    #End of UI part
     
-#End of UI part
-  
-)  
+  )  
   
   
-##############################################.
-############## Server ----
-##############################################.
+  ##############################################.
+  ############## Server ----
+  ##############################################.
   
   
   #Beginning of server
   server  <-  function(input, output)
   {
-    #We first need to set up the location type and location options 
-    #so that they location options are dependent on location type
-    
-    output$location_types <- renderUI({
-      shinyWidgets::pickerInput(inputId = "Location_type", 
-                                label = "Select location type ",
-                                choices = location_types, 
-                                selected = "Scotland")
+
+    #Graph information text output
+    output$text_output<-renderUI({ 
+      p(HTML("Show/hide table - show data in a table below the chart."),
+        
+      p(HTML("At the top-right corner of the chart, 
+             you will see a toolbar with four buttons:"),
+        br(),
+        tags$ul(
+          tags$li(
+            icon("camera"),
+            tags$b("Download plot as a png"),
+            " - click this button to save the graph as an image
+            (please note that Internet Explorer does not support this
+            function)."
+          ),
+          tags$li(
+            icon("search"),
+            tags$b("Zoom"),
+            " - zoom into the graph by clicking this button and then
+            clicking and dragging your mouse over the area of the
+            graph you are interested in."
+          ),
+          tags$li(
+            icon("move", lib = "glyphicon"),
+            tags$b("Pan"),
+            " - adjust the axes of the graph by clicking this button
+            and then clicking and moving your mouse in any direction
+            you want."
+          ),
+          tags$li(
+            icon("home"),
+            tags$b("Reset axes"),
+            " - click this button to return the axes to their
+            default range."
+          )
+          ),
+        HTML("Categories can be shown/hidden by clicking on labels
+             in the legend to the right of each chart.")
+          ))
     })
     
-    output$locations <- renderUI({
-      shinyWidgets::pickerInput(inputId = "Location",
-                                label = "Select location",  
-                                choices = sort(
-                                  unique(
-                                    as.character(
-                                      activity_summary$Geography
-                                      [activity_summary$Geography.Type %in% input$Location_type]
-                                    )
-                                  )
-                                )
-      )
-    }) 
-
-#need to work out how to get Scotland options in correct order
-#'Scotland', 'Outside Scotland', 'Unknown'
-#levels(factor(location)) %in% input$Location_type
     
     #we can then plot the graph based on the user input.
     #First we create a subset  of the data based on user input
-
+    
     #For the activity summary
     activity_summary_new <- reactive({
       activity_summary %>%
         filter(
-          Hospital.Clinical.Type %in% input$Hospital_Clinic_Type
-          & Geography %in% input$Location
-        )
+          hospital_type %in% input$Hospital_Type
+          & clinical_type %in% input$Clinical_Type
+          & geography %in% input$Location
+        )%>%
+        select(year,hospital_type, clinical_type, activity_type,geography,value)
     })
     
     #for the substances summary
     drug_summary_new <- reactive({
       drug_summary %>%
         filter(
-          Hospital.Clinical.Type %in% input$Hospital_Clinic_Type
-          & Geography %in% input$Location
-        )
+          hospital_type %in% input$Hospital_Type
+          & clinical_type %in% input$Clinical_Type
+          & geography %in% input$Location
+        )%>%
+        select(year,hospital_type,clinical_type,drug_type,geography,value)
     })
     
     #for the demographic summary
@@ -358,30 +509,40 @@ h3("Substances"),
       {
         demographic_summary %>%
           filter(
-            Hospital.Clinical.Type %in% input$Hospital_Clinic_Type
-            & Geography %in% input$Location
-            & Sex == "All"
-          )
+            hospital_type %in% input$Hospital_Type
+            & clinical_type %in% input$Clinical_Type
+            & geography %in% input$Location
+            & age_group != "All"
+          )%>%
+          select(year,hospital_type,clinical_type,geography,age_group,value)%>% 
+          droplevels()
       }
       else if(input$summary_demographic == "Sex")
       {demographic_summary %>%
           filter(
-            Hospital.Clinical.Type %in% input$Hospital_Clinic_Type
-            & Geography %in% input$Location
-            & Age == "All"
-          ) 
-          
+            hospital_type %in% input$Hospital_Type
+            & clinical_type %in% input$Clinical_Type
+            & geography %in% input$Location
+            & sex != "All"
+          ) %>%
+          select(year,hospital_type,clinical_type,geography,sex,value)%>% 
+          droplevels()
+        
       }
-      else if (input$summary_demographic == "SIMD")
+      else if (input$summary_demographic == "Deprivation")
       {
-        SIMD_summary %>%
-          filter(Hospital.Clinical.Type %in% input$Hospital_Clinic_Type
-                 & Geography %in% input$Location
-                 )
+        demographic_summary %>%
+          filter(hospital_type %in% input$Hospital_Type
+                 & clinical_type %in% input$Clinical_Type
+                 & geography %in% input$Location
+                 & simd != "All"
+          )%>%
+          select(year,hospital_type,clinical_type,geography,simd,value)%>% 
+          droplevels()
       }
     })
     
-
+    
     #Then we can plot the actual graph, with labels
     
     #Activity Summary plot
@@ -390,27 +551,26 @@ h3("Substances"),
     output$activity_summary_plot <- renderPlotly({
       #first the tooltip label
       tooltip_summary <- paste0(
+        "Activity type: ", 
+        activity_summary_new()$activity_type,
+        "<br>",
         "Financial year: ",
-        activity_summary_new()$Years,
+        activity_summary_new()$year,
         "<br>",
-        "Location: ",
-        activity_summary_new()$Geography,
-        "<br>",
-        "Clinical Type: ",
-        activity_summary_new()$Hospital.Clinical.Type,
-        "<br>",
-        "EASR rates: ",
-        activity_summary_new()$Values
+        "Rate: ",
+        formatC(activity_summary_new()$value, big.mark = ",",digits = 2,format = 'f')
+        
       )
       
       #Create the main body of the chart.
       
       plot_ly(
         data = activity_summary_new(),
-        #plot- we wont bother at this point with tailored colour
-        x = ~  Years,
-        y = ~  Values,
-        color = ~  Activity,
+        #plot
+        x = ~  year,
+        y = ~  value,
+        color = ~  activity_type,
+        colors = c('#006ddb','#920000','#004949'),
         #tooltip
         text = tooltip_summary,
         hoverinfo = "text",
@@ -423,12 +583,28 @@ h3("Substances"),
       ) %>%
         
         #add in title to chart
+       
+      
+      
         
-        layout(title =
-                 paste0("Activity rates for ",input$Hospital_Clinic_Type,
-                        " in ", input$Location),
+        layout(title = list(text=
+                              paste0(  input$Hospital_Type,
+                            " hospital rates by activity type (",
+                            input$Location,
+                            "; ",
+                            word(input$Clinical_Type,start = 1,sep = " \\("),
+                            ")"),
+                 font = list(size = 15)),
                
                separators = ".",
+               annotations = 
+                 list(x = 1.0, y = -0.25, 
+                      text = paste0("Source: Drug-Related","<br>",
+                                    "Hospital Statistics,","<br>",
+                                    "ISD Scotland (",format(Sys.Date(), "%Y"),")"), 
+                      showarrow = F, xref='paper', yref='paper', 
+                      xanchor='left', yanchor='auto', xshift=0, yshift=0,
+                      font=list(family = "arial", size=12, color="#7f7f7f")),
                
                yaxis = list(
                  
@@ -436,13 +612,13 @@ h3("Substances"),
                  
                  separatethousands = TRUE,
                  
-                 range = c(0, max(activity_summary_new()$Values, na.rm = TRUE) +
-                             (max(activity_summary_new()$Values, na.rm = TRUE)
+                 range = c(0, max(activity_summary_new()$value, na.rm = TRUE) +
+                             (max(activity_summary_new()$value, na.rm = TRUE)
                               * 10 / 100)),
                  
                  title = paste0(c(
                    rep("&nbsp;", 20),
-                   "EASR Rates",
+                   "EASR per 100,000 population",
                    rep("&nbsp;", 20),
                    rep("\n&nbsp;", 3)
                  ),
@@ -458,7 +634,8 @@ h3("Substances"),
                #Wrap the x axis title in blank spaces so that it doesn't...
                #overlap with the x axis tick labels.
                
-               xaxis = list(tickangle = -45,
+               xaxis = list(range = c(-1,22),
+                            tickangle = -45,
                             title = paste0(c(rep("&nbsp;", 20),
                                              "<br>",
                                              "Financial year",
@@ -474,7 +651,6 @@ h3("Substances"),
                
                margin = list(l = 90, r = 60, b = 160, t = 90),
                font = list(size = 13),
-               titlefont = list(size = 15),
                
                #insert legend
                showlegend = TRUE,
@@ -489,8 +665,26 @@ h3("Substances"),
                                              'toggleSpikelines',
                                              'hoverCompareCartesian',
                                              'hoverClosestCartesian'),
-               displaylogo = F, collaborate = F, editable = F)
+               displaylogo = F,  editable = F)
       
+    })
+    
+    #Insert table
+    output$activity_summary_table <- renderDataTable({
+      datatable(activity_summary_new(),
+                colnames = c("Financial year",
+                             "Hospital type",
+                             "Clinical type",
+                             "Activity type",
+                             "Location",
+                             "Rate"),
+                rownames = FALSE,
+                style = "Bootstrap", 
+                options = list(searching= FALSE,
+                               lengthChange= FALSE)
+                
+      )%>% 
+        formatRound(columns = 6,digits = 2)
     })
     
     # Substances Plot
@@ -498,27 +692,34 @@ h3("Substances"),
     output$drugs_plot <- renderPlotly({
       #first the tooltip label
       tooltip_summary <- paste0(
+        "Drug type: ",
+        drug_summary_new()$drug_type,
+        "<br>",
         "Financial year: ",
-        drug_summary_new()$Years,
+        drug_summary_new()$year,
         "<br>",
-        "Location: ",
-        drug_summary_new()$Geography,
-        "<br>",
-        "Clinical Type: ",
-        drug_summary_new()$Hospital.Clinical.Type,
-        "<br>",
-        "EASR rates: ",
-        drug_summary_new()$Values
+        "Rate: ",
+        formatC(drug_summary_new()$value, big.mark = ",",
+                digits = 2,format = 'f')
+        
       )
       
       #Create the main body of the chart.
       
       plot_ly(
         data = drug_summary_new(),
-        #plot- we wont bother at this point with tailored colour
-        x = ~  Years,
-        y = ~  Values,
-        color = ~  Substance,
+        #plot
+        x = ~  year,
+        y = ~  value,
+        color = ~  drug_type,
+        colors = ~ c(
+          '#004949',
+          '#db6d00',
+          '#ffb6db',
+          '#006ddb',
+          '#920000',
+          '#b66dff' 
+        ),
         #tooltip
         text = tooltip_summary,
         hoverinfo = "text",
@@ -528,29 +729,44 @@ h3("Substances"),
         marker = list(size = 8),
         width = 1000,
         height = 600
-        )%>%
+      )%>%
         
         #add in title to chart
         
-        layout(title =
-                 paste0("Stay rates for ",input$Hospital_Clinic_Type,
-                        " in ", input$Location, " by drug category"),
+        layout(title = list(
+          text=
+            paste0(  input$Hospital_Type,
+                     " hospital stay rates by drug type (",
+                     input$Location,
+                     "; ",
+                     word(input$Clinical_Type,start = 1,sep = " \\("),
+                     ")"
+        ),font = list(size = 15)),
                
                separators = ".",
                
+               annotations = 
+                 list(x = 1.0, y = -0.25, 
+                      text = paste0("Source: Drug-Related","<br>",
+                                    "Hospital Statistics,","<br>",
+                                    "ISD Scotland (",format(Sys.Date(), "%Y"),")"), 
+                      showarrow = F, xref='paper', yref='paper', 
+                      xanchor='left', yanchor='auto', xshift=0, yshift=0,
+                      font=list(family = "arial", size=12, color="#7f7f7f")),
+               
                yaxis = list(
                  
-                exponentformat = "none",
+                 exponentformat = "none",
                  
                  separatethousands = TRUE,
                  
-                 range = c(0, max(drug_summary_new()$Values, na.rm = TRUE) +
-                             (max(drug_summary_new()$Values, na.rm = TRUE)
+                 range = c(0, max(drug_summary_new()$value, na.rm = TRUE) +
+                             (max(drug_summary_new()$value, na.rm = TRUE)
                               * 10 / 100)),
                  
                  title = paste0(c(
                    rep("&nbsp;", 20),
-                   "EASR Rates",
+                   "EASR per 100,000 population",
                    rep("&nbsp;", 20),
                    rep("\n&nbsp;", 3)
                  ),
@@ -566,29 +782,30 @@ h3("Substances"),
                #Wrap the x axis title in blank spaces so that it doesn't...
                #overlap with the x axis tick labels.
                
-               xaxis = list(tickangle = -45,
+               xaxis = list(range = c(-1,22),
+                            tickangle = -45,
                             title = paste0(c(rep("&nbsp;", 20),
                                              "<br>",
                                              "Financial year",
                                              rep("&nbsp;", 20),
                                              rep("\n&nbsp;", 3)),
-                                          collapse = ""),
+                                           collapse = ""),
                             showline = TRUE,
                             ticks = "outside"),
+               font = list(size = 13),
                
                #Fix the margins so that the graph and axis titles have enough...
                #room to display nicely.
                #Set the font sizes.
                
                margin = list(l = 90, r = 60, b = 160, t = 90),
-               font = list(size = 13),
-               titlefont = list(size = 15),
+               
                
                #insert legend
                showlegend = TRUE,
                legend = list(bgcolor = 'rgba(255, 255, 255, 0)',
                              bordercolor = 'rgba(255, 255, 255, 0)')) %>%
-
+        
         #Remove unnecessary buttons from the modebar.
         
         config(displayModeBar = TRUE,
@@ -597,26 +814,42 @@ h3("Substances"),
                                              'toggleSpikelines',
                                              'hoverCompareCartesian',
                                              'hoverClosestCartesian'),
-               displaylogo = F, collaborate = F, editable = F)
+               displaylogo = F,  editable = F)
       
     })
+    
+    output$drugs_table <- renderDataTable({
+      datatable(drug_summary_new(),
+                colnames = c("Financial year",
+                             "Hospital type",
+                             "Clinical type",
+                             "Drug type",
+                             "Location",
+                             "Rate"),
+                rownames = FALSE,
+                style = "Bootstrap", 
+                options = list(searching= FALSE,
+                               lengthChange= FALSE)
+      ) %>% 
+        formatRound(columns = 6,digits = 2)
+    })
+    
     
     #Demographic Plot
     
     output$demographic_plot <- renderPlotly({
       #first the tooltip label
       tooltip_summary <- paste0(
-      "Financial year: ",
-        demographic_summary_new()$Years,
+        input$summary_demographic, ": ",
+        demographic_summary_new()[,5],
         "<br>",
-        "Location: ",
-        demographic_summary_new()$Geography,
+        "Financial year: ",
+        demographic_summary_new()$year,
         "<br>",
-        "Clinical Type: ",
-        demographic_summary_new()$Hospital.Clinical.Type,
-        "<br>",
-        "EASR rates: ",
-        demographic_summary_new()$Values
+        "Rate: ",
+        formatC(demographic_summary_new()$value, big.mark = ",",
+                digits = 2,format = 'f')
+        
       )
       
       #Create the main body of the chart.
@@ -624,9 +857,37 @@ h3("Substances"),
       plot_ly(
         data = demographic_summary_new(),
         #plot- we wont bother at this point with tailored colour
-        x = ~  Years,
-        y = ~  Values,
-        color = ~  get(input$summary_demographic),
+        x = ~  year,
+        y = ~  value,
+        color = ~  demographic_summary_new()[,5],
+        colors = 
+          if (input$summary_demographic == "Deprivation")
+          {
+            c("#b66dff",
+              "#db6d00",
+              "#920000",
+              "#006ddb",
+              "#490092"
+              )
+          }
+        else if (input$summary_demographic == "Age")
+        {
+          c("#b66dff",
+            "#db6d00",
+            "#920000",
+            "#006ddb",
+            "#490092",
+            "#6db6ff",
+            "#b6dbff"
+          )
+        }
+        else {
+          c("#920000",
+            "#006ddb")
+        }
+      
+          
+          ,
         #tooltip
         text = tooltip_summary,
         hoverinfo = "text",
@@ -636,18 +897,48 @@ h3("Substances"),
         marker = list(size = 8),
         width = 1000,
         height = 600
-        )%>%
+      )%>%
         
         #add in title to chart
         
-        
-        layout(title =
-                 paste0("Patient rates for ",
-                        input$Hospital_Clinic_Type,
-                        " in ", input$Location, 
-                        " by ", input$summary_demographic),
+        layout(title = list (text= (
+          if (input$summary_demographic == "Deprivation")
+          {
+            paste0(  input$Hospital_Type,
+                     " hospital patient rates by deprivation quintile (",
+                     input$Location,
+                     "; ",
+                     word(input$Clinical_Type,start = 1,sep = " \\("),
+                     ")")
+          }
+          else if (input$summary_demographic == "Age")
+          {
+            paste0(  input$Hospital_Type,
+                     " hospital patient rates by age group (",
+                     input$Location,
+                     "; ",
+                     word(input$Clinical_Type,start = 1,sep = " \\("),
+                     ")")
+          }
+          else {
+            paste0(  input$Hospital_Type,
+                     " hospital patient rates by sex (",
+                     input$Location,
+                     "; ",
+                     word(input$Clinical_Type,start = 1,sep = " \\("),
+                     ")")
+          }
+        ),font = list(size = 15)),
                
                separators = ".",
+        annotations = 
+          list(x = 0.96, y = -0.29, 
+               text = paste0("Source: Drug-Related","<br>",
+                             "Hospital Statistics,","<br>",
+                             "ISD Scotland (",format(Sys.Date(), "%Y"),")"), 
+               showarrow = F, xref='paper', yref='paper', 
+               xanchor='left', yanchor='auto', xshift=0, yshift=0,
+               font=list(family = "arial", size=12, color="#7f7f7f")),
                
                yaxis = list(
                  
@@ -655,13 +946,13 @@ h3("Substances"),
                  
                  separatethousands = TRUE,
                  
-                 range = c(0, max(demographic_summary_new()$Values, na.rm = TRUE) +
-                             (max(demographic_summary_new()$Values, na.rm = TRUE)
+                 range = c(0, max(demographic_summary_new()$value, na.rm = TRUE) +
+                             (max(demographic_summary_new()$value, na.rm = TRUE)
                               * 10 / 100)),
                  
                  title = paste0(c(
                    rep("&nbsp;", 20),
-                   "EASR Rates",
+                   "EASR per 100,000 population",
                    rep("&nbsp;", 20),
                    rep("\n&nbsp;", 3)
                  ),
@@ -677,7 +968,8 @@ h3("Substances"),
                #Wrap the x axis title in blank spaces so that it doesn't...
                #overlap with the x axis tick labels.
                
-               xaxis = list(tickangle = -45,
+               xaxis = list(range = c(-1,22),
+                            tickangle = -45,
                             title = paste0(c(rep("&nbsp;", 20),
                                              "<br>",
                                              "Financial year",
@@ -693,15 +985,14 @@ h3("Substances"),
                #
                margin = list(l = 90, r = 60, b = 160, t = 90),
                font = list(size = 13),
-               titlefont = list(size = 15),
                
                #insert legend
                showlegend = TRUE,
                legend = list(
-                             bgcolor = 'rgba(255, 255, 255, 0)',
-                             bordercolor = 'rgba(255, 255, 255, 0)')) %>%
+                 bgcolor = 'rgba(255, 255, 255, 0)',
+                 bordercolor = 'rgba(255, 255, 255, 0)')) %>%
         
-#        #Remove unnecessary buttons from the modebar.
+        #        #Remove unnecessary buttons from the modebar.
         
         config(displayModeBar = TRUE,
                modeBarButtonsToRemove = list('select2d', 'lasso2d', 'zoomIn2d',
@@ -709,13 +1000,42 @@ h3("Substances"),
                                              'toggleSpikelines',
                                              'hoverCompareCartesian',
                                              'hoverClosestCartesian'),
-               displaylogo = F, collaborate = F, editable = F)
+               displaylogo = F,  editable = F)
       
     })
     
+    
+    #Insert table
+    output$demographic_table <- renderDataTable({
+      datatable(demographic_summary_new(),
+                rownames = FALSE,
+                colnames = c("Financial year",
+                             "Hospital type",
+                             "Clinical type",
+                             "Location",
+                             input$summary_demographic,
+                             "Rate"),
+                style = "Bootstrap", 
+                options = list(searching= FALSE,
+                               lengthChange= FALSE)
+      )%>% 
+        formatRound(columns = 6,digits = 2)
+      
+       
+    })
+      
+    #glossary link
+    
+      output$download_glossary <- downloadHandler(
+        filename = 'glossary.pdf',
+        content = function(file) {
+          file.copy(paste0(filepath, "www\\glossary.pdf"), file)
+        }
+      )
+      
     #End of server
   }
   #End of script
-  }
+}
 
 shinyApp(ui = ui, server = server)
