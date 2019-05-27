@@ -44,10 +44,9 @@ library(bsplus)
 #Current approach to reading in data is to take the SPSS output and then cut it down to 
 #size and then save as csv files for use. 
 
-filepath<- "\\\\nssstats01\\SubstanceMisuse1\\Topics\\DrugRelatedHospitalStats\\Publications\\DRHS\\20181218\\Temp\\"
 
 #Data to be used for explorer and trend pages
-all_data<- readRDS(paste0(filepath,"s06-temp09_num_rate_perc_R-SHINY_rounded.RDS"))
+all_data<- readRDS("s06-temp09_num_rate_perc_r-shiny_rounded.RDS")
 #need to rename the final column as value
 all_data<-all_data %>% 
   rename("value" = value_Round)
@@ -106,9 +105,6 @@ demographic_summary <- demographic_summary %>%
   mutate(sex= fct_relevel(sex,rev))
 
 
-
-
-
 #we will also set user input options
 hospital_types <- as.character(unique(activity_summary$hospital_type))
 hospital_types<-c(hospital_types[3],hospital_types[1],hospital_types[2])
@@ -130,24 +126,32 @@ demographic_types<-c("Age","Sex", "Deprivation")
   ##############################################.
   ############## User Interface ----
   ##############################################.
-  ui <- fluidPage(
+  ui <- fluidPage(style = "width: 100%; height: 100%; max-width: 1200px;",
     
+    
+    titlePanel(title=div(img(src="ISD_NSS_logos.png",height = 96,
+                             width = 223,
+                             style = "float:right;"),
+                         h1("Drug-Related Hospital Statistics"),
+                         h4("Drug and Alcohol Misuse"), 
+                         style = "height:96px;"),
+               windowTitle = "Drug-Related Hospital Statistics"),
+    tabPanel(title = "",
+             
     style = "height: 95%; width: 95%; background-color: #FFFFFF;
     border: 0px solid #FFFFFF;",
+    h1(tags$b("Trend data"), id= 'Top'),
+    
     p(
-      h3("RESTRICTED STATISTICS: embargoed to 09:30 28/05/2019", style = "color:red")
-    ),
-    h1(tags$b("Trend Data"), id= 'Top'),
-    p(
-      "The Trend Data page provides an overview of drug-related hospital stays 
+      "The Trend data page provides an overview of drug-related hospital stays 
          in Scotland over time, based on the following charts: 
         ",
       tags$ul(
-        tags$li(tags$a(href= '#activity_link',"Activity type"),
+        tags$li(tags$a(href= '#activity_link',tags$b("Activity type")),
                 " (stay rates, patient rates and new patient rates)"),
         tags$li(tags$a(href = '#drugs_link',  
-                       "Drug type")),
-        tags$li(tags$a(href='#demographics_link', "Patient Demographics"),
+                       tags$b("Drug type"))),
+        tags$li(tags$a(href='#demographics_link', tags$b("Patient demographics")),
                 " (Age/Sex/Deprivation - choose between these using the blue 
                 buttons above the chart)")
       )),
@@ -155,8 +159,8 @@ demographic_types<-c("Age","Sex", "Deprivation")
     
       bs_accordion(id = "drhs_text") %>%
         bs_set_opts(panel_type = "primary") %>%
-        bs_append(title = "Chart information", 
-                  content = p("Charts can be modified using the drop down boxes: ",
+        bs_append(title = "data selection", 
+                  content = p("The charts can be modified using the drop down boxes: ",
                   tags$ul(
                     tags$li("Hospital type: general acute or psychiatric hospital data 
                 (or a combination);"),
@@ -164,31 +168,28 @@ demographic_types<-c("Age","Sex", "Deprivation")
                 poisoning/overdose stays (or a combination); and,"),
                     tags$li("Location: data from Scotland, specific NHS Boards or 
                 Alcohol and Drug Partnerships.")
-                  ), 
-                  "Show/hide table - shows data in a table below the chart."))%>% 
+                  )))%>% 
         bs_append(title = "Chart functions",
-                  content = p(
+                  content = p("At the top-right corner of each chart, you will see
+                              a toolbar with four buttons: ",
                     tags$ul(
                     tags$li(
                       icon("camera"),
                       tags$b("Download plot as a png"),
-                      " - click this button to save the graph as an image
-                      (please note that Internet Explorer does not support this
-                      function)."
+                      " - save an image of the chart (not available in 
+                      Internet Explorer)."
                     ),
                     tags$li(
                       icon("search"),
                       tags$b("Zoom"),
-                      " - zoom into the graph by clicking this button and then
-                      clicking and dragging your mouse over the area of the
-                      graph you are interested in."
+                      " - click and drag within the chart area to focus 
+                      on a specific part."
                     ),
                     tags$li(
                       icon("move", lib = "glyphicon"),
                       tags$b("Pan"),
-                      " - adjust the axes of the graph by clicking this button
-                      and then clicking and moving your mouse in any direction
-                      you want."
+                      " - click and move the mouse in any direction to 
+                      modify the chart axes."
                     ),
                     tags$li(
                       icon("home"),
@@ -198,23 +199,34 @@ demographic_types<-c("Age","Sex", "Deprivation")
                     )
                     ), 
                   "Categories can be shown/hidden by clicking on labels 
-                  in the legend to the right of each chart.")),
-      
-     p(
-      
-        "A more detailed breakdown of these data is available in the ",
-        tags$b(
-          tags$a(href = "https://scotland.shinyapps.io/nhs-drhs-data-explorer/",
-                 "Data explorer.")
-        )
-      ) ,
+                  in the legend to the right of each chart."))%>% 
+    bs_append(title = "Table functions",
+              content = p("To view your data selection in a table, use the
+                            'Show/hide table' button below each chart.",
+                          tags$ul(
+                            tags$li(
+                              icon("sort", lib = "glyphicon"),
+                              tags$b("Sort"),
+                              " - click to sort a table in ascending or descending 
+                      order based on the values in a column. "
+                            ),
+                            tags$li(
+                              tags$b("Page controls"),
+                              " - switch to specific page of data within a table. "
+                            )
+                          ), 
+                          "Categories can be shown/hidden by clicking on labels 
+                  in the legend to the right of each chart."))
+    
+    ,
+    
+    p(
+      HTML(paste0('A more detailed breakdown of these data is available in the <b> <a href="https://scotland.shinyapps.io/nhs-drhs-data-explorer/">Data explorer</a></b>.'))
+     ) ,
     p(
       "If you experience any problems using this dashboard or have further
       questions relating to the data, please contact us at:",
-      tags$b(
-        tags$a(href = "mailto:NSS.isdsubstancemisuse@nhs.net",
-               "NSS.isdsubstancemisuse@nhs.net.")
-      )
+      HTML(paste0('<b> <a href="mailto:NSS.isdsubstancemisuse@nhs.net">NSS.isdsubstancemisuse@nhs.net</a></b>.'))
     ),
     
 
@@ -223,8 +235,7 @@ demographic_types<-c("Age","Sex", "Deprivation")
       tags$b(
         "Note: Statistical disclosure control has been applied to protect
         patient confidentiality. Therefore, the figures presented here
-        may not be additive and may differ to previous
-        sources of information."
+        may not be additive and may differ from previous publications"
       )
     ),
     downloadButton(outputId = "download_glossary", 
@@ -311,9 +322,10 @@ demographic_types<-c("Age","Sex", "Deprivation")
       br(),
       p("Main points (Scotland)",
       tags$ul(
-        tags$li("The rate of drug-related general acute stays within Scotland increased 
-                steadily from 51 to 199 stays per 100,000 population between
-                1996/97 and 2017/18."),
+        tags$li("Over the past 20 years, there was a fourfold increase in the 
+                rate of drug-related general acute hospital stays within Scotland 
+                (from 51 to 199 stays per 100,000 population), with a sharper 
+                increase observed in recent years."),
         tags$li("After a lengthy period of stability, the rate of drug-related 
                 psychiatric stays within Scotland increased from 29 to 40 stays per 100,000 
                 population between 2014/15 and 2016/17, before decreasing slightly 
@@ -358,8 +370,9 @@ demographic_types<-c("Age","Sex", "Deprivation")
                  Scotland were due 
                 to opioids (drugs similar to heroin)."),
         tags$li("51% of drug-related psychiatric stays within Scotland were
-                 associated with 
-                ‘multiple/other’ drugs.")
+                 associated with ‘multiple/other’ drugs  (including 
+                hallucinogens, volatile solvents, multiple drug use and use of 
+                other psychoactive substances (e.g. ecstasy)).")
       )),
       tags$a(href = '#Top',  
              icon("circle-arrow-up", lib= "glyphicon"),"Back to top"),
@@ -421,7 +434,8 @@ demographic_types<-c("Age","Sex", "Deprivation")
       ))
     )
     #End of UI part
-    
+  
+  )  
   )  
   
   
@@ -1029,7 +1043,7 @@ demographic_types<-c("Age","Sex", "Deprivation")
       output$download_glossary <- downloadHandler(
         filename = 'glossary.pdf',
         content = function(file) {
-          file.copy(paste0(filepath, "www\\glossary.pdf"), file)
+          file.copy(paste0(filepath, "www/glossary.pdf"), file)
         }
       )
       
