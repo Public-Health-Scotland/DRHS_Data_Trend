@@ -1,29 +1,30 @@
-#Name: Drug Related Hospital Statistics (DRHS) Data trend page
-#Author: Mike Smith
-#Created: 24/01/2019
-#Type: Data visualisation
-#Written on: RStudio
-#Written for: R version 3.5.1 
-#Output: Shiny application
+# Name: Drug Related Hospital Statistics (DRHS) Data trend page
+# Author: Mike Smith
+# Created: 24/01/2019
+# Updated: 28/05/2021
+# Type: Data visualisation
+# Written on: RStudio
+# Written for: R version 3.5.1 
+# Output: Shiny application
 
-#Descripion: The Data Trend page is a one-page shiny app that is intended to give a high 
-#level overview of data at at the level of Scotland, health boards or Alcohol and
-#Drug Partnerships (ADP's). It is intended to mirror some of the functionality 
-#of the current transformed publications data trend page. 
+# Descripion: The Data Trend page is a one-page shiny app that is intended to give a high 
+# level overview of data at at the level of Scotland, health boards or Alcohol and
+# Drug Partnerships (ADP's). It is intended to mirror some of the functionality 
+# of the current transformed publications data trend page. 
 
-#There will be three charts in total in the data trend page
+# There will be three charts in total in the data trend page
 # - 1) Rates of Activity Measure (Stays/Patients/New Patients)
 # - 2) Rates of Stays broken down by substance categories
 # - 3) Rates of Patients broken down by Demographic measure (Age/Sex/Deprivation). 
 
 
-#There will be intitially three options to choose from 
-# - 1) Hospital/Clinical Type
-# - 2) Geography Type
+# There will be intitially three options to choose from 
+# - 1) Hospital Type
+# - 2) Diagnosis Type
 # = 3) Geography
 
-#A fourth option will be used to 'toggle' between Age, Sex and SIMD for the 
-#demographic charts. 
+# A fourth option will be used to 'toggle' between Age, Sex and SIMD for the 
+# demographic charts. 
 
 library(shiny)
 library(dplyr)
@@ -34,105 +35,39 @@ library(DT)
 library(stringr)
 library(shinyBS)
 library(bsplus)
+library(shinymanager)
 
 ##############################################.
 ############## Data Input ----
 ##############################################.
 
 
-#The current data is stored on the stats server in the SubstanceMisuse1 directory 
-#Current approach to reading in data is to take the SPSS output and then cut it down to 
-#size and then save as csv files for use. 
 
+# Data to be used for explorer and trend pages
+activity_summary<- readRDS("activity_summary.rds")
+drug_summary<-readRDS("drug_summary.rds")
+demographic_summary<-readRDS("demographic_summary.rds")
 
-#Data to be used for explorer and trend pages
-all_data<- readRDS("s06-temp10_num_rate_perc_R-SHINY_rounded.RDS")
-#need to rename the final column as value
-all_data<-all_data %>% 
-  rename("value" = value_Round)
-
-#We will remove the data that has 1.06 as its  (within area SIMD analysis)
-#and then drop this column. 
-all_data <- all_data %>% 
-  filter(output != 1.06) %>% 
-  select(-output)
-
-#round the data to nearest two 
-all_data <- all_data %>% mutate(value = round(value, 2))
-
-#We will manually change the names of factors in R until we have an agreed 
-#terminology for the hospital and clinical types. 
-
-all_data<-all_data %>% 
-  mutate(hospital_type= fct_recode(hospital_type, 
-                                   "General acute"= "General acute (SMR01)",
-                                   "Psychiatric" ="Psychiatric (SMR04)",
-                                   "Any hospital type" = "Combined (General acute/Psychiatric)"))
-
-all_data<-all_data %>% 
-  mutate(clinical_type= fct_recode(clinical_type, 
-                                   "Mental & behavioural" = "Mental and Behavioural",
-                                   "Overdose" = "Overdose",
-                                   "Any diagnosis" = "Combined (Mental and Behavioural/Overdose)"))
-
-         
-activity_summary<-all_data %>% 
-  filter(drug_type == "All", 
-         age_group == "All",
-         sex == "All",
-         simd == "All", 
-         measure == "Rate")
-
-
-#filter by drug type
-drug_types<- as.character(unique(all_data$drug_type)[2:7])
-
-drug_summary<- all_data %>% 
-  filter(activity_type == "Stays",
-         drug_type %in% drug_types,
-         age_group == "All",
-         sex == "All",
-         simd == "All", 
-         measure == "Rate") %>%  
-  mutate(drug_type = fct_relevel(drug_type, "Cannabinoids","Cocaine","Multiple/Other","Opioids","Other Stimulants",
-                                 "Sedatives/Hypnotics"))%>% 
-  droplevels()
-
-#filter by demography
-demographic_summary<- all_data  %>% 
-  filter(drug_type == "All",
-         activity_type =="Patients",
-         ((age_group != "All" & sex == "All" & simd =="All")|
-            (age_group == "All" & sex != "All" & simd =="All")|
-            (age_group == "All" & sex == "All" & simd !="All")), 
-         measure == "Rate") 
-
-demographic_summary<- as.data.frame(demographic_summary)
-
-
-
-#we will also set user input options
+# We will also set user input options
 hospital_types <- as.character(unique(activity_summary$hospital_type))
 hospital_types<-c(hospital_types[3],hospital_types[1],hospital_types[2])
-clinical_types <- as.character(unique(activity_summary$clinical_type))
-clinical_types<-c(clinical_types[3],clinical_types[1],clinical_types[2])
+diagnosis_types <- as.character(unique(activity_summary$diagnosis_type))
+diagnosis_types<-c(diagnosis_types[3],diagnosis_types[1],diagnosis_types[2])
 locations <- as.character(unique(activity_summary$geography))
 location_types<-list("Scotland" = locations[1],
                      "NHS Board of residence" = locations[2:15],
                      "ADP of residence" = locations[16:46])
-
+drug_types<- as.character(unique(drug_summary$drug_type))
 demographic_types<-c("Age","Sex", "Deprivation")
 
 
-#Colour blind friendly colour scheme - consult documentation
-
-
-#Beginning of script
+# Beginning of script
 {
   ##############################################.
   ############## User Interface ----
   ##############################################.
-  ui <- fluidPage(style = "width: 100%; height: 100%; max-width: 1200px;",
+  ui <- #secure_app( #uncomment if needing password protection
+    fluidPage(style = "width: 100%; height: 100%; max-width: 1200px;",
     
                   tags$head(
                     tags$script(src="https://cdnjs.cloudflare.com/ajax/libs/iframe-resizer/3.5.16/iframeResizer.contentWindow.min.js",
@@ -206,11 +141,11 @@ demographic_types<-c("Age","Sex", "Deprivation")
       ,
       
      p(
-      HTML(paste0('A more detailed breakdown of these data is available in the <b> <a href="https://beta.isdscotland.org/find-publications-and-data/lifestyle-and-behaviours/substance-use/drug-related-hospital-statistics/27-october-2020/data-explorer/">Data explorer</a></b>.'))
+      HTML(paste0('A more detailed breakdown of these data is available in the <b> <a href="https://beta.isdscotland.org/find-publications-and-data/lifestyle-and-behaviours/substance-use/drug-related-hospital-statistics/15-june-2021/data-explorer/">Data explorer</a></b>.'))
       ) ,
     p(
       "Technical terms are explained in the ", 
-          HTML(paste0('<b><a href="https://beta.isdscotland.org/find-publications-and-data/lifestyle-and-behaviours/substance-use/drug-related-hospital-statistics/27-october-2020/glossary/">Glossary</a></b>.'))
+          HTML(paste0('<b><a href="https://beta.isdscotland.org/find-publications-and-data/lifestyle-and-behaviours/substance-use/drug-related-hospital-statistics/15-june-2021/glossary/">Glossary</a></b>.'))
     ),
     p(
       "If you experience any problems using this dashboard or have further
@@ -253,9 +188,9 @@ demographic_types<-c("Age","Sex", "Deprivation")
       column(
         4,
         shinyWidgets::pickerInput(
-          inputId = "Clinical_Type",
+          inputId = "Diagnosis_Type",
           label = "Diagnosis grouping",
-          choices = clinical_types
+          choices = diagnosis_types
         )
       ),
       column(
@@ -304,18 +239,15 @@ demographic_types<-c("Age","Sex", "Deprivation")
       br(),
       p("Main points (Scotland)",
       tags$ul(
-        tags$li("Between 1996/97 and 2018/19, there was a greater than threefold increase 
-                in the rate of drug-related hospital stays in Scotland from 73 to 260 
-                stays per 100,000 population."),
-        tags$li("The rate of drug-related general acute hospital stays increased from 51 to
-                219 stays per 100,000 population between 1996/97 and 2018/19, with a sharper 
-                increase observed in recent years."),
-        tags$li("After a lengthy period of stability, the rate of drug-related psychiatric hospital 
-                stays in Scotland increased from 29 to 41 stays per 100,000 population between 2014/15 and 2018/19."),
-        tags$li("In 2018/19, there were 5,202 people who were treated in a Scottish hospital 
-                (general acute or psychiatric) in relation to drug use for the first time. The 
-                drug-related new patient rate increased from 55 new patients per 100,000 population
-                in 2006/07 to 97 new patients per 100,000 population in 2018/19.")
+        tags$li("Between 1996/97 and 2019/20, there was a greater than threefold increase in the
+                rate of drug-related hospital stays in Scotland from 74 to 282 stays per 100,000 population."),
+        tags$li("The rate of drug-related general acute hospital stays increased from 51 to 243 stays 
+                per 100,000 population between 1996/97 and 2019/20, with a sharper increase observed in recent years."),
+        tags$li("After a lengthy period of stability, the rate of drug-related psychiatric hospital stays in Scotland increased from 29 to 40 
+                stays per 100,000 population between 2014/15 and 2016/17, and has remained at around this level to 2019/20."),
+        tags$li("In 2019/20, there were 5,586 people who were treated in a Scottish hospital (general acute 
+                or psychiatric) in relation to drug use for the first time. The drug-related new patient rate
+                increased from 55 new patients per 100,000 population in 2006/07 to 103 new patients per 100,000 population in 2019/20.")
       )),
       tags$a(href = '#Top',  
              icon("circle-arrow-up", lib= "glyphicon"),"Back to top"),
@@ -348,20 +280,17 @@ demographic_types<-c("Age","Sex", "Deprivation")
       br(),
       p("Main points (Scotland)",
       tags$ul(
-        tags$li("In 2018/19, there were 133 stays per 100,000 population associated with opioids 
-                in Scottish hospitals (general acute or psychiatric). The next most common drug types
-                recorded in hospital stays were multiple/other drugs (64 stays per 100,000 population), 
-                sedatives/hypnotics (39), cannabinoids (33) and cocaine (31). Hospital stay rates for 
-                each of these drug types have increased since 2013/14."),
-        tags$li("In 2018/19, opioids (drugs similar to heroin) were associated with 55% of 
-                drug-related general acute stays in Scotland. The percentage of drug-related general 
-                acute stays associated with opioids has decreased (from 70% in 2011/12) as stays related 
-                to other drug types have become more common. Between 2011/12 and 2018/19, the percentage 
-                of drug-related general acute stays associated with sedatives/hypnotics increased from 8% 
-                to 16% and the percentage of cocaine-related stays increased from 6% to 14%."),
-        tags$li("In 2018/19, over half (54%) of drug-related psychiatric stays in Scotland were 
-                associated with ‘multiple/other’ drugs (including hallucinogens, volatile solvents, 
-                multiple drug use and use of other psychoactive substances (for example, ecstasy)).")
+        tags$li("In 2019/20, there were 140 stays per 100,000 population associated with opioids in
+                Scottish hospitals (general acute or psychiatric). The next most common drug types recorded
+                in hospital stays were multiple/other drugs (64 stays per 100,000 population), sedatives/hypnotics (50),
+                cannabinoids (38) and cocaine (35). Hospital stay rates for each of these drug types have increased since 2013/14."),
+        tags$li("In 2019/20, opioids (drugs similar to heroin) were associated with 52% of drug-related general acute
+                stays in Scotland. The percentage of drug-related general acute stays associated with opioids has
+                decreased (from 70% in 2011/12) as stays related to other drug types have become more common. Between
+                2014/15 and 2019/20, the percentage of drug-related general acute stays associated with sedatives/hypnotics
+                increased from 8% to 19% and the percentage of cocaine-related stays increased from 7% to 14%."),
+        tags$li("In 2019/20, over half (53%) of drug-related psychiatric stays in Scotland were associated with
+                ‘multiple/other’ drugs (including, volatile solvents, multiple drug use and use of other psychoactive substances)")
       )),
       tags$a(href = '#Top',  
              icon("circle-arrow-up", lib= "glyphicon"),"Back to top"),
@@ -407,16 +336,16 @@ demographic_types<-c("Age","Sex", "Deprivation")
         br(),
         p("Main points (Scotland)",
         tags$ul(
-          tags$li("Since 2013/14, the most common age group among people with a drug-related hospital
-                  stay (general acute or psychiatric) has been 35-44 years. Patient rates for this group 
-                  increased ninefold from 56 to 501 patients per 100,000 population between 1996/97 and 2018/19."),
-          tags$li("Following a lengthy period of annual decreases, patient rates for 15-24 year olds
-                  increased from 126 patients per 100,000 population in 2012/13 to 206 patients per 
-                  100,000 population in 2018/19. The 2018/19 patient rate for this age group was the
-                  highest recorded since 2003/04 (215 patients per 100,000 population)."),
-          tags$li("Between 1996/97 and 2018/19, drug-related patient rates for males were consistently 
+          tags$li("Since 2013/14, the most common age group among people with a drug-related hospital stay 
+                  (general acute or psychiatric) has been 35-44 years. Patient rates for this group increased
+                  ninefold from 56 to 514 patients per 100,000 population between 1996/97 and 2019/20."),
+          tags$li("Following a lengthy period of annual decreases, patient rates for 15-24 year olds 
+                  increased from 126 patients per 100,000 population in 2012/13 to 226 patients per 100,000 population
+                  in 2019/20. The 2019/20 patient rate for this age group was the highest recorded since
+                  2002/03 (258 patients per 100,000 population)."),
+          tags$li("Between 1996/97 and 2019/20, drug-related patient rates for males were consistently 
                   more than double drug-related patient rates for females."),
-          tags$li("In 2018/19, approximately half of the patients with a drug-related general acute 
+          tags$li("In 2019/20, approximately half of the patients with a drug-related general acute 
                   or psychiatric stay lived in the 20% of most deprived areas in Scotland.")
         ), 
         tags$a(href = '#Top',  
@@ -428,16 +357,25 @@ demographic_types<-c("Age","Sex", "Deprivation")
   ), 
   HTML('<div data-iframe-height></div>')
   )
-  
+#)#secure app  
   ##############################################.
   ############## Server ----
   ##############################################.
   
   
   #Beginning of server
-  server  <-  function(input, output)
+  credentials <- readRDS("admin/credentials.rds")
+  server  <-  function(input, output,session)
   {
 
+    res_auth <- secure_server(
+      check_credentials = check_credentials(credentials)
+    )
+    
+    output$auth_output <- renderPrint({
+      reactiveValuesToList(res_auth)
+    })
+    
     #Graph information text output
     output$text_output<-renderUI({ 
       p(HTML("Show/hide table - show data in a table below the chart."),
@@ -488,10 +426,10 @@ demographic_types<-c("Age","Sex", "Deprivation")
       activity_summary %>%
         filter(
           hospital_type %in% input$Hospital_Type
-          & clinical_type %in% input$Clinical_Type
+          & diagnosis_type %in% input$Diagnosis_Type
           & geography %in% input$Location
         )%>%
-        select(year,hospital_type, clinical_type, activity_type,geography,value)
+        select(year,hospital_type, diagnosis_type, activity_type,geography,value)
     })
     
     #for the substances summary
@@ -499,10 +437,10 @@ demographic_types<-c("Age","Sex", "Deprivation")
       drug_summary %>%
         filter(
           hospital_type %in% input$Hospital_Type
-          & clinical_type %in% input$Clinical_Type
+          & diagnosis_type %in% input$Diagnosis_Type
           & geography %in% input$Location
         )%>%
-        select(year,hospital_type,clinical_type,drug_type,geography,value)
+        select(year,hospital_type,diagnosis_type,drug_type,geography,value)
     })
     
     #for the demographic summary
@@ -514,22 +452,22 @@ demographic_types<-c("Age","Sex", "Deprivation")
         demographic_summary %>%
           filter(
             hospital_type %in% input$Hospital_Type
-            & clinical_type %in% input$Clinical_Type
+            & diagnosis_type %in% input$Diagnosis_Type
             & geography %in% input$Location
-            & age_group != "All"
+            & age_group != "All age groups"
           )%>%
-          select(year,hospital_type,clinical_type,geography,age_group,value)%>% 
+          select(year,hospital_type,diagnosis_type,geography,age_group,value)%>% 
           droplevels()
       }
       else if(input$summary_demographic == "Sex")
       {demographic_summary %>%
           filter(
             hospital_type %in% input$Hospital_Type
-            & clinical_type %in% input$Clinical_Type
+            & diagnosis_type %in% input$Diagnosis_Type
             & geography %in% input$Location
-            & sex != "All"
+            & sex != "Both sexes"
           ) %>%
-          select(year,hospital_type,clinical_type,geography,sex,value)%>% 
+          select(year,hospital_type,diagnosis_type,geography,sex,value)%>% 
           droplevels()
         
       }
@@ -537,11 +475,11 @@ demographic_types<-c("Age","Sex", "Deprivation")
       {
         demographic_summary %>%
           filter(hospital_type %in% input$Hospital_Type
-                 & clinical_type %in% input$Clinical_Type
+                 & diagnosis_type %in% input$Diagnosis_Type
                  & geography %in% input$Location
                  & simd != "All"
           )%>%
-          select(year,hospital_type,clinical_type,geography,simd,value)%>% 
+          select(year,hospital_type,diagnosis_type,geography,simd,value)%>% 
           droplevels()
       }
     })
@@ -574,7 +512,7 @@ demographic_types<-c("Age","Sex", "Deprivation")
         x = ~  year,
         y = ~  value,
         color = ~  activity_type,
-        colors = c('#006ddb','#920000','#004949'),
+        colors = c('#3F3685','#9B4393','#0078D4'),
         #tooltip
         text = tooltip_summary,
         hoverinfo = "text",
@@ -593,12 +531,12 @@ demographic_types<-c("Age","Sex", "Deprivation")
         
         layout(title = list(text=
                               paste0(  
-                            " Drug-related hospital rates by activity type 1996/97 to 2018/19",
+                            " Drug-related hospital rates by activity type 1996/97 to 2019/20",
                             "<br>","(",
                             input$Location,
                             "; ",
                             input$Hospital_Type, "; ",
-                            word(input$Clinical_Type,start = 1,sep = " \\("),
+                            word(input$Diagnosis_Type,start = 1,sep = " \\("),
                             ")"),
                  font = list(size = 15)),
                
@@ -607,7 +545,7 @@ demographic_types<-c("Age","Sex", "Deprivation")
                  list(x = 1.0, y = -0.25, 
                       text = paste0("Source: Drug-Related","<br>",
                                     "Hospital Statistics","<br>",
-                                    "(PHS, 2020)"), 
+                                    "(PHS, 2021)"), 
                       showarrow = F, xref='paper', yref='paper', 
                       xanchor='left', yanchor='auto', xshift=0, yshift=0,
                       font=list(family = "arial", size=12, color="#7f7f7f")),
@@ -638,7 +576,7 @@ demographic_types<-c("Age","Sex", "Deprivation")
                #Wrap the x axis title in blank spaces so that it doesn't...
                #overlap with the x axis tick labels.
                
-               xaxis = list(range = c(-1,23),
+               xaxis = list(range = c(-1,24),
                             fixedrange = TRUE,
                             tickangle = -45,
                             title = paste0(c(rep("&nbsp;", 20),
@@ -679,7 +617,7 @@ demographic_types<-c("Age","Sex", "Deprivation")
       datatable(activity_summary_new(),
                 colnames = c("Financial year",
                              "Hospital type",
-                             "Clinical type",
+                             "Diagnosis type",
                              "Activity type",
                              "Location",
                              "Rate"),
@@ -718,12 +656,13 @@ demographic_types<-c("Age","Sex", "Deprivation")
         y = ~  value,
         color = ~  drug_type,
         colors = ~ c(
-          '#004949',  #Cannabinoids
-          '#db6d00',  #Cocaine
-          '#ffb6db',  #Multiple/Other
-          '#006ddb',  #Opioids
-          '#920000',  #Other stimulants
-          '#b66dff'   #Sedatives/Hypnotics
+          '#9B4393',  #Cannabinoids
+          '#83BB26',  #Cocaine
+          '#C73918',  #Hallucinogens
+          '#948DA3',  #Multiple/Other
+          '#0078D4',  #Opioids
+          '#1E7F84',  #Other stimulants
+          '#6B5C85'   #Sedatives/Hypnotics
         ),
         #tooltip
         text = tooltip_summary,
@@ -741,12 +680,12 @@ demographic_types<-c("Age","Sex", "Deprivation")
         layout(title = list(
           text=
             paste0(  
-                     "Drug-related hospital stay rates by drug type 1996/97 to 2018/19",
+                     "Drug-related hospital stay rates by drug type 1996/97 to 2019/20",
                      "<br>", " (",
                      input$Location,
                      "; ",
                      input$Hospital_Type,"; ",
-                     word(input$Clinical_Type,start = 1,sep = " \\("),
+                     word(input$Diagnosis_Type,start = 1,sep = " \\("),
                      ")"
         ),font = list(size = 15)),
                
@@ -756,7 +695,7 @@ demographic_types<-c("Age","Sex", "Deprivation")
                  list(x = 1.0, y = -0.25, 
                       text = paste0("Source: Drug-Related","<br>",
                                     "Hospital Statistics","<br>",
-                                    "(PHS, 2020)"), 
+                                    "(PHS, 2021)"), 
                       showarrow = F, xref='paper', yref='paper', 
                       xanchor='left', yanchor='auto', xshift=0, yshift=0,
                       font=list(family = "arial", size=12, color="#7f7f7f")),
@@ -787,7 +726,7 @@ demographic_types<-c("Age","Sex", "Deprivation")
                #Wrap the x axis title in blank spaces so that it doesn't...
                #overlap with the x axis tick labels.
                
-               xaxis = list(range = c(-1,23),
+               xaxis = list(range = c(-1,24),
                             fixedrange = TRUE,
                             tickangle = -45,
                             title = paste0(c(rep("&nbsp;", 20),
@@ -828,7 +767,7 @@ demographic_types<-c("Age","Sex", "Deprivation")
       datatable(drug_summary_new(),
                 colnames = c("Financial year",
                              "Hospital type",
-                             "Clinical type",
+                             "Diagnosis type",
                              "Drug type",
                              "Location",
                              "Rate"),
@@ -869,27 +808,27 @@ demographic_types<-c("Age","Sex", "Deprivation")
         colors = 
           if (input$summary_demographic == "Deprivation")
           {
-            c("#b66dff",
-              "#db6d00",
-              "#920000",
-              "#006ddb",
-              "#490092"
+            c("#3F3685",
+              "#9B4393",
+              "#0078D4",
+              "#83BB26",
+              "#948DA3"
               )
           }
         else if (input$summary_demographic == "Age")
         {
-          c("#b66dff",
-            "#db6d00",
-            "#920000",
-            "#006ddb",
-            "#490092",
-            "#6db6ff",
-            "#b6dbff"
+          c("#3F3685",
+            "#9B4393",
+            "#0078D4",
+            "#83BB26",
+            "#948DA3",
+            "#1E7F84",
+            "#6B5C85"
           )
         }
         else {
-          c("#920000",
-            "#006ddb")
+          c("#3F3685",
+            "#9B4393")
         }
       
           
@@ -916,7 +855,7 @@ demographic_types<-c("Age","Sex", "Deprivation")
                      input$Location,
                      "; ",
                      input$Hospital_Type, "; ",
-                     word(input$Clinical_Type,start = 1,sep = " \\("),
+                     word(input$Diagnosis_Type,start = 1,sep = " \\("),
                      ")")
           }
           else if (input$summary_demographic == "Age")
@@ -927,7 +866,7 @@ demographic_types<-c("Age","Sex", "Deprivation")
                      input$Location,
                      "; ",
                      input$Hospital_Type,"; ",
-                     word(input$Clinical_Type,start = 1,sep = " \\("),
+                     word(input$Diagnosis_Type,start = 1,sep = " \\("),
                      ")")
           }
           else {
@@ -937,7 +876,7 @@ demographic_types<-c("Age","Sex", "Deprivation")
                      input$Location,
                      "; ",
                      input$Hospital_Type,"; ",
-                     word(input$Clinical_Type,start = 1,sep = " \\("),
+                     word(input$Diagnosis_Type,start = 1,sep = " \\("),
                      ")")
           }
         ),font = list(size = 15)),
@@ -947,7 +886,7 @@ demographic_types<-c("Age","Sex", "Deprivation")
           list(x = 0.96, y = -0.29, 
                text = paste0("Source: Drug-Related","<br>",
                              "Hospital Statistics","<br>",
-                             "(PHS, 2020)"), 
+                             "(PHS, 2021)"), 
                showarrow = F, xref='paper', yref='paper', 
                xanchor='left', yanchor='auto', xshift=0, yshift=0,
                font=list(family = "arial", size=12, color="#7f7f7f")),
@@ -978,7 +917,7 @@ demographic_types<-c("Age","Sex", "Deprivation")
                #Wrap the x axis title in blank spaces so that it doesn't...
                #overlap with the x axis tick labels.
                
-               xaxis = list(range = c(-1,23),
+               xaxis = list(range = c(-1,24),
                             fixedrange = TRUE,
                             tickangle = -45,
                             title = paste0(c(rep("&nbsp;", 20),
